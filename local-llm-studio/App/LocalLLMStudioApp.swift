@@ -6,6 +6,7 @@
 //  es HTTP hacia el servidor de Ollama en localhost.
 //
 
+import SwiftData
 import SwiftUI
 
 @main
@@ -15,5 +16,6 @@ struct LocalLLMStudioApp: App {
             ContentView()
         }
         .windowStyle(.automatic)
+        .modelContainer(for: [ChatSession.self, LibraryDocument.self])
     }
 }
