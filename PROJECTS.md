@@ -25,10 +25,11 @@ El principio rector del proyecto es **local-first con privacidad por defecto**: 
 - [x] Descarga con un clic mediante `/api/pull` de Ollama, con barra de progreso en la UI. Sin consola.
 - [x] Refresco automático de la lista de modelos instalados al terminar cada descarga.
 
-### Fase 3: Persistencia y Biblioteca de Documentos Local
-- [ ] Sistema de archivos mediante SwiftData (guardar rutas locales sin duplicar archivos en disco).
-- [ ] Lógica nativa de lectura de archivos locales (Markdown, TXT, PDF).
-- [ ] Procesador RAG local: extracción, chunking e inyección de contexto en el prompt.
+### Fase 3: Persistencia y Biblioteca de Documentos Local (Completada)
+- [x] Historial de conversaciones persistido con SwiftData (sidebar con sesiones).
+- [x] Sistema de archivos mediante SwiftData (bookmarks con ámbito de seguridad, sin duplicar archivos en disco).
+- [x] Lógica nativa de lectura de archivos locales (Markdown, TXT, PDF vía PDFKit).
+- [x] Procesador RAG local: extracción, chunking, embeddings locales (`/api/embed` + nomic-embed-text) con respaldo por palabras clave, e inyección de contexto en el prompt con citas de origen.
 
 ### Fase 4: Búsqueda Web Híbrida (Planificada)
 - [ ] Interruptor de privacidad en la UI para activar/desactivar el acceso a internet del asistente (off por defecto).
