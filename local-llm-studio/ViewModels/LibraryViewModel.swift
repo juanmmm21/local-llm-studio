@@ -27,12 +27,22 @@ final class LibraryViewModel {
         self.service = service
     }
 
-    /// Añade y procesa documentos seleccionados por el usuario:
-    /// bookmark → extracción → chunking → embeddings (si hay modelo).
-    func addDocuments(at urls: [URL], context: ModelContext) async {
-        isIndexing = true
+    /// Documento leído en memoria durante la fase síncrona de importación.
+    private struct StagedDocument {
+        let name: String
+        let fileExtension: String
+        let bookmark: Data
+        let data: Data
+    }
+
+    /// Importa documentos seleccionados por el usuario. La lectura de los
+    /// bytes ocurre AQUÍ, de forma síncrona y dentro del ámbito de
+    /// seguridad del sandbox: el permiso que concede el selector de
+    /// archivos es efímero y no sobrevive de forma fiable a un salto
+    /// asíncrono ("Operation not permitted" al leer más tarde).
+    func importDocuments(at urls: [URL], context: ModelContext) {
         notices = []
-        var embeddingUnavailable = false
+        var staged: [StagedDocument] = []
 
         for url in urls {
             let accessGranted = url.startAccessingSecurityScopedResource()
@@ -40,18 +50,49 @@ final class LibraryViewModel {
                 if accessGranted { url.stopAccessingSecurityScopedResource() }
             }
 
+            guard let data = try? Data(contentsOf: url) else {
+                notices.append("\(url.lastPathComponent): macOS denegó la lectura del archivo.")
+                continue
+            }
+
+            // El bookmark con ámbito de seguridad permite releerlo en el
+            // futuro; si no se puede crear, uno mínimo sirve de referencia.
+            let bookmark = (try? url.bookmarkData(
+                options: .withSecurityScope,
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )) ?? (try? url.bookmarkData()) ?? Data()
+
+            staged.append(StagedDocument(
+                name: url.lastPathComponent,
+                fileExtension: url.pathExtension.lowercased(),
+                bookmark: bookmark,
+                data: data
+            ))
+        }
+
+        guard !staged.isEmpty else { return }
+        Task { await index(staged, context: context) }
+    }
+
+    /// Fase asíncrona: extracción, chunking y embeddings sobre los bytes
+    /// ya leídos, sin volver a tocar los archivos originales.
+    private func index(_ staged: [StagedDocument], context: ModelContext) async {
+        isIndexing = true
+        var embeddingUnavailable = false
+
+        for item in staged {
             do {
-                let text = try DocumentIndexer.extractText(from: url)
-                let bookmark = try url.bookmarkData(
-                    options: .withSecurityScope,
-                    includingResourceValuesForKeys: nil,
-                    relativeTo: nil
+                let text = try DocumentIndexer.extractText(
+                    from: item.data,
+                    fileExtension: item.fileExtension,
+                    name: item.name
                 )
 
                 let document = LibraryDocument(
-                    name: url.lastPathComponent,
-                    fileExtension: url.pathExtension.lowercased(),
-                    bookmarkData: bookmark
+                    name: item.name,
+                    fileExtension: item.fileExtension,
+                    bookmarkData: item.bookmark
                 )
                 context.insert(document)
 

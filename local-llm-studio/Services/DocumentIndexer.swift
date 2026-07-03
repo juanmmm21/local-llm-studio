@@ -31,23 +31,26 @@ enum DocumentIndexer {
 
     static let supportedExtensions: Set<String> = ["md", "markdown", "txt", "text", "pdf"]
 
-    /// Extrae el texto plano completo de un archivo local.
-    static func extractText(from url: URL) throws -> String {
-        let name = url.lastPathComponent
-        let ext = url.pathExtension.lowercased()
-
-        guard supportedExtensions.contains(ext) else {
+    /// Extrae el texto plano de un documento ya leído en memoria.
+    ///
+    /// Se trabaja sobre `Data` y no sobre la URL porque el permiso del
+    /// sandbox que concede el selector de archivos es efímero: los bytes
+    /// se leen en el momento de la selección y el procesado pesado ocurre
+    /// después, ya sin depender del ámbito de seguridad.
+    static func extractText(from data: Data, fileExtension: String, name: String) throws -> String {
+        guard supportedExtensions.contains(fileExtension) else {
             throw DocumentIndexerError.unsupportedType(name)
         }
 
         let text: String
-        if ext == "pdf" {
-            guard let pdf = PDFDocument(url: url), let content = pdf.string else {
+        if fileExtension == "pdf" {
+            guard let pdf = PDFDocument(data: data), let content = pdf.string else {
                 throw DocumentIndexerError.unreadable(name)
             }
             text = content
         } else {
-            guard let content = try? String(contentsOf: url, encoding: .utf8) else {
+            guard let content = String(data: data, encoding: .utf8)
+                ?? String(data: data, encoding: .isoLatin1) else {
                 throw DocumentIndexerError.unreadable(name)
             }
             text = content

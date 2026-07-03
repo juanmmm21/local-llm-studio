@@ -37,7 +37,9 @@ struct LibraryView: View {
             allowsMultipleSelection: true
         ) { result in
             guard case .success(let urls) = result else { return }
-            Task { await viewModel.addDocuments(at: urls, context: modelContext) }
+            // Lectura inmediata y síncrona: el permiso del sandbox sobre
+            // estas URLs no sobrevive de forma fiable a un salto asíncrono.
+            viewModel.importDocuments(at: urls, context: modelContext)
         }
     }
 
