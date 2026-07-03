@@ -17,6 +17,8 @@ enum OllamaServiceError: LocalizedError {
     case unexpectedStatusCode(Int)
     /// La respuesta JSON no coincide con el contrato esperado.
     case decodingFailed(Error)
+    /// La descarga de un modelo falló (mensaje del propio servidor).
+    case pullFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -26,6 +28,8 @@ enum OllamaServiceError: LocalizedError {
             return "Ollama respondió con un código inesperado: \(code)."
         case .decodingFailed:
             return "No se pudo interpretar la respuesta de Ollama."
+        case .pullFailed(let message):
+            return "La descarga falló: \(message)"
         }
     }
 }
@@ -139,6 +143,77 @@ actor OllamaService {
             continuation.onTermination = { _ in
                 // Cancela la lectura del socket si la UI deja de consumir
                 // el stream (p. ej. el usuario pulsa "Detener").
+                task.cancel()
+            }
+        }
+    }
+
+    /// Descarga un modelo del registro de Ollama (`POST /api/pull`) y emite
+    /// el progreso como stream asíncrono para pintarlo en la UI.
+    ///
+    /// Es el único punto de la app (junto a la futura búsqueda web opcional)
+    /// donde interviene internet, y la descarga en sí la gestiona el servidor
+    /// local de Ollama; la app solo observa el progreso por localhost.
+    func pullModel(tag: String) async throws -> AsyncThrowingStream<PullProgress, Error> {
+        let url = baseURL.appending(path: "/api/pull")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Las descargas grandes pueden tardar mucho; ampliamos el timeout
+        // por petición (las fases de verificación no emiten bytes).
+        request.timeoutInterval = 3600
+        request.httpBody = try JSONEncoder().encode(OllamaPullRequest(model: tag, stream: true))
+
+        let bytes: URLSession.AsyncBytes
+        let response: URLResponse
+        do {
+            (bytes, response) = try await session.bytes(for: request)
+        } catch {
+            throw OllamaServiceError.serverUnavailable
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OllamaServiceError.serverUnavailable
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw OllamaServiceError.unexpectedStatusCode(httpResponse.statusCode)
+        }
+
+        let decoder = self.decoder
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await line in bytes.lines {
+                        guard !line.isEmpty, let data = line.data(using: .utf8) else { continue }
+                        let chunk: OllamaPullChunk
+                        do {
+                            chunk = try decoder.decode(OllamaPullChunk.self, from: data)
+                        } catch {
+                            throw OllamaServiceError.decodingFailed(error)
+                        }
+
+                        if let errorMessage = chunk.error {
+                            throw OllamaServiceError.pullFailed(errorMessage)
+                        }
+
+                        let fraction: Double?
+                        if let total = chunk.total, total > 0, let completed = chunk.completed {
+                            fraction = Double(completed) / Double(total)
+                        } else {
+                            fraction = nil
+                        }
+                        continuation.yield(PullProgress(status: chunk.status ?? "", fraction: fraction))
+
+                        if chunk.status == "success" {
+                            break
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in
                 task.cancel()
             }
         }
