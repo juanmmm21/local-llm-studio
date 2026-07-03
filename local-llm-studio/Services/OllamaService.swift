@@ -219,6 +219,40 @@ actor OllamaService {
         }
     }
 
+    /// Genera embeddings semánticos localmente (`POST /api/embed`) con el
+    /// modelo de embeddings indicado. Se usa para indexar la biblioteca
+    /// RAG y para buscar fragmentos relevantes; todo ocurre en el Mac.
+    func embed(texts: [String], model: String = "nomic-embed-text") async throws -> [[Double]] {
+        let url = baseURL.appending(path: "/api/embed")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Indexar documentos grandes puede tardar más que una petición normal.
+        request.timeoutInterval = 300
+        request.httpBody = try JSONEncoder().encode(OllamaEmbedRequest(model: model, input: texts))
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw OllamaServiceError.serverUnavailable
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OllamaServiceError.serverUnavailable
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw OllamaServiceError.unexpectedStatusCode(httpResponse.statusCode)
+        }
+
+        do {
+            return try decoder.decode(OllamaEmbedResponse.self, from: data).embeddings
+        } catch {
+            throw OllamaServiceError.decodingFailed(error)
+        }
+    }
+
     // MARK: - Transporte
 
     private func get<Response: Decodable>(_ path: String) async throws -> Response {
