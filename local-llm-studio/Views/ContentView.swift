@@ -11,7 +11,9 @@ import SwiftUI
 struct ContentView: View {
     @State private var modelList = ModelListViewModel()
     @State private var chat = ChatViewModel()
+    @State private var catalog = ModelCatalogViewModel()
     @State private var selectedModel: OllamaModel?
+    @State private var isCatalogPresented = false
 
     var body: some View {
         NavigationSplitView {
@@ -22,7 +24,19 @@ struct ContentView: View {
         }
         .navigationTitle("local-llm-studio")
         .toolbar { toolbarContent }
+        .sheet(isPresented: $isCatalogPresented) {
+            ModelCatalogView(viewModel: catalog, installedModels: modelList.models)
+        }
         .task {
+            // Al terminar cada descarga del catálogo, refresca el sidebar
+            // y selecciona un modelo si aún no había ninguno.
+            catalog.onModelInstalled = {
+                await modelList.loadModels()
+                if selectedModel == nil {
+                    selectedModel = modelList.models.first
+                }
+            }
+
             await modelList.loadModels()
             // Preselecciona el modelo más reciente para poder chatear ya.
             if selectedModel == nil {
@@ -57,11 +71,16 @@ struct ContentView: View {
             }
 
         case .loaded where modelList.models.isEmpty:
-            ContentUnavailableView(
-                "Sin modelos instalados",
-                systemImage: "cpu",
-                description: Text("Descarga un modelo con `ollama pull llama3.2` y vuelve a intentarlo.")
-            )
+            ContentUnavailableView {
+                Label("Sin modelos instalados", systemImage: "cpu")
+            } description: {
+                Text("Descarga tu primer modelo desde el catálogo integrado.")
+            } actions: {
+                Button("Abrir catálogo") {
+                    isCatalogPresented = true
+                }
+                .buttonStyle(.borderedProminent)
+            }
 
         case .loaded:
             List(modelList.models, selection: $selectedModel) { model in
@@ -98,6 +117,16 @@ struct ContentView: View {
             .pickerStyle(.menu)
             .frame(minWidth: 180)
             .help("Modelo local activo")
+        }
+
+        ToolbarItem {
+            Button {
+                isCatalogPresented = true
+            } label: {
+                Label("Catálogo de modelos", systemImage: "arrow.down.circle")
+            }
+            .keyboardShortcut("d", modifiers: [.command, .shift])
+            .help("Descargar nuevos modelos (⇧⌘D)")
         }
 
         ToolbarItem {
