@@ -40,6 +40,10 @@ struct ContentView: View {
             ProgressView("Buscando modelos locales…")
                 .frame(maxHeight: .infinity)
 
+        case .startingServer:
+            ProgressView("Iniciando Ollama en segundo plano…")
+                .frame(maxHeight: .infinity)
+
         case .failed(let message):
             ContentUnavailableView {
                 Label("Ollama no disponible", systemImage: "bolt.horizontal.circle")
