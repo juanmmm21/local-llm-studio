@@ -2,18 +2,26 @@
 //  ContentView.swift
 //  local-llm-studio
 //
-//  Vista raíz: sidebar con los modelos locales instalados, panel central
-//  de chat y selector de modelo en la barra de herramientas.
+//  Vista raíz: sidebar con el historial de conversaciones persistido,
+//  panel central de chat y selector de modelo en la barra superior.
 //
 
+import SwiftData
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \ChatSession.updatedAt, order: .reverse) private var sessions: [ChatSession]
+
     @State private var modelList = ModelListViewModel()
     @State private var chat = ChatViewModel()
     @State private var catalog = ModelCatalogViewModel()
+    @State private var library = LibraryViewModel()
+
+    @State private var selectedSession: ChatSession?
     @State private var selectedModel: OllamaModel?
     @State private var isCatalogPresented = false
+    @State private var isLibraryPresented = false
 
     var body: some View {
         NavigationSplitView {
@@ -27,7 +35,17 @@ struct ContentView: View {
         .sheet(isPresented: $isCatalogPresented) {
             ModelCatalogView(viewModel: catalog, installedModels: modelList.models)
         }
+        .sheet(isPresented: $isLibraryPresented) {
+            LibraryView(viewModel: library)
+        }
+        .onChange(of: selectedSession) {
+            if let selectedSession {
+                chat.attach(session: selectedSession)
+            }
+        }
         .task {
+            chat.configure(context: modelContext)
+
             // Al terminar cada descarga del catálogo, refresca el sidebar
             // y selecciona un modelo si aún no había ninguno.
             catalog.onModelInstalled = {
@@ -37,8 +55,12 @@ struct ContentView: View {
                 }
             }
 
+            // Retoma la conversación más reciente o crea la primera.
+            if selectedSession == nil {
+                selectedSession = sessions.first ?? newSession()
+            }
+
             await modelList.loadModels()
-            // Preselecciona el modelo más reciente para poder chatear ya.
             if selectedModel == nil {
                 selectedModel = modelList.models.first
             }
@@ -47,59 +69,94 @@ struct ContentView: View {
 
     // MARK: - Sidebar
 
-    @ViewBuilder
     private var sidebar: some View {
-        switch modelList.state {
-        case .idle, .loading:
-            ProgressView("Buscando modelos locales…")
-                .frame(maxHeight: .infinity)
+        VStack(spacing: 0) {
+            List(selection: $selectedSession) {
+                Section("Conversaciones") {
+                    ForEach(sessions) { session in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(session.title)
+                                .lineLimit(1)
+                            Text(session.updatedAt.formatted(date: .abbreviated, time: .shortened))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(session)
+                        .contextMenu {
+                            Button("Eliminar conversación", role: .destructive) {
+                                delete(session)
+                            }
+                        }
+                    }
+                }
+            }
+            .listStyle(.sidebar)
 
-        case .startingServer:
-            ProgressView("Iniciando Ollama en segundo plano…")
-                .frame(maxHeight: .infinity)
+            Divider()
+            serverStatusFooter
+        }
+    }
 
-        case .failed(let message):
-            ContentUnavailableView {
-                Label("Ollama no disponible", systemImage: "bolt.horizontal.circle")
-            } description: {
-                Text(message)
-            } actions: {
+    /// Estado del servidor local de Ollama, siempre visible al pie.
+    @ViewBuilder
+    private var serverStatusFooter: some View {
+        HStack(spacing: 8) {
+            switch modelList.state {
+            case .idle, .loading:
+                ProgressView().controlSize(.mini)
+                Text("Conectando con Ollama…")
+
+            case .startingServer:
+                ProgressView().controlSize(.mini)
+                Text("Iniciando Ollama…")
+
+            case .failed:
+                Image(systemName: "bolt.horizontal.circle")
+                    .foregroundStyle(.red)
+                Text("Ollama no disponible")
+                Spacer()
                 Button("Reintentar") {
                     Task { await modelList.loadModels() }
                 }
-                .keyboardShortcut("r")
-            }
+                .controlSize(.small)
 
-        case .loaded where modelList.models.isEmpty:
-            ContentUnavailableView {
-                Label("Sin modelos instalados", systemImage: "cpu")
-            } description: {
-                Text("Descarga tu primer modelo desde el catálogo integrado.")
-            } actions: {
-                Button("Abrir catálogo") {
-                    isCatalogPresented = true
-                }
-                .buttonStyle(.borderedProminent)
-            }
+            case .loaded where modelList.models.isEmpty:
+                Image(systemName: "cpu")
+                    .foregroundStyle(.orange)
+                Text("Sin modelos")
+                Spacer()
+                Button("Catálogo") { isCatalogPresented = true }
+                    .controlSize(.small)
 
-        case .loaded:
-            List(modelList.models, selection: $selectedModel) { model in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(model.name)
-                        .font(.headline)
-                    HStack(spacing: 10) {
-                        if let parameters = model.details.parameterSize {
-                            Label(parameters, systemImage: "slider.horizontal.3")
-                        }
-                        Label(model.formattedSize, systemImage: "internaldrive")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 4)
-                .tag(model)
+            case .loaded:
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text("\(modelList.models.count) modelos locales")
             }
-            .listStyle(.sidebar)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Sesiones
+
+    @discardableResult
+    private func newSession() -> ChatSession {
+        let session = ChatSession()
+        modelContext.insert(session)
+        try? modelContext.save()
+        selectedSession = session
+        return session
+    }
+
+    private func delete(_ session: ChatSession) {
+        let wasSelected = session === selectedSession
+        modelContext.delete(session)
+        try? modelContext.save()
+        if wasSelected {
+            selectedSession = sessions.first(where: { $0 !== session }) ?? newSession()
         }
     }
 
@@ -121,6 +178,16 @@ struct ContentView: View {
 
         ToolbarItem {
             Button {
+                isLibraryPresented = true
+            } label: {
+                Label("Biblioteca", systemImage: "books.vertical")
+            }
+            .keyboardShortcut("l", modifiers: [.command, .shift])
+            .help("Biblioteca de documentos para RAG (⇧⌘L)")
+        }
+
+        ToolbarItem {
+            Button {
                 isCatalogPresented = true
             } label: {
                 Label("Catálogo de modelos", systemImage: "arrow.down.circle")
@@ -131,7 +198,7 @@ struct ContentView: View {
 
         ToolbarItem {
             Button {
-                chat.clearConversation()
+                newSession()
             } label: {
                 Label("Nueva conversación", systemImage: "square.and.pencil")
             }
@@ -153,4 +220,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .modelContainer(for: [ChatSession.self, LibraryDocument.self], inMemory: true)
 }

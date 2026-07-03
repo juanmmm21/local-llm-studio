@@ -68,6 +68,16 @@ struct ChatView: View {
             }
 
             HStack(alignment: .bottom, spacing: 8) {
+                Toggle(isOn: $viewModel.useLibrary) {
+                    Image(systemName: viewModel.useLibrary ? "books.vertical.fill" : "books.vertical")
+                }
+                .toggleStyle(.button)
+                .buttonStyle(.borderless)
+                .help(viewModel.useLibrary
+                      ? "El asistente consultará tu biblioteca local (RAG)"
+                      : "Biblioteca desactivada para esta conversación")
+                .padding(.bottom, 6)
+
                 TextField(
                     selectedModel.map { "Mensaje para \($0.name)…" } ?? "Selecciona un modelo para empezar",
                     text: $viewModel.draft,
