@@ -36,5 +36,6 @@ local-llm-studio/
 
 - [x] Estructura base del proyecto.
 - [x] `OllamaService`: cliente asíncrono para listar modelos instalados (`GET /api/tags`).
-- [ ] Chat con streaming (`POST /api/chat`).
-- [ ] UI de tres paneles (Sidebar + Chat + Selector de modelos).
+- [x] Chat con streaming (`POST /api/chat`, NDJSON token a token).
+- [x] UI de tres zonas (Sidebar de modelos + Chat + Selector en la barra superior).
+- [ ] Persistencia de sesiones de chat con SwiftData (Fase 2).

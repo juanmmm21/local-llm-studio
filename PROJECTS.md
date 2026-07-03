@@ -13,10 +13,10 @@ El propósito crítico del proyecto es el **aislamiento total de la red**: tanto
 
 ## Hoja de Ruta de Desarrollo
 
-### Fase 1: Core de Conectividad Local y UI (En Desarrollo)
-- [ ] Estructura base de la app de macOS (Sidebar + Ventana de Chat + Selector superior de modelos locales).
-- [ ] Cliente HTTP asíncrono para interactuar con el endpoint local de Ollama (`/api/tags` y `/api/chat`).
-- [ ] Implementación de streaming de texto en la interfaz sin latencia ni bloqueos de memoria.
+### Fase 1: Core de Conectividad Local y UI (Completada)
+- [x] Estructura base de la app de macOS (Sidebar + Ventana de Chat + Selector superior de modelos locales).
+- [x] Cliente HTTP asíncrono para interactuar con el endpoint local de Ollama (`/api/tags` y `/api/chat`).
+- [x] Implementación de streaming de texto en la interfaz sin latencia ni bloqueos de memoria.
 
 ### Fase 2: Persistencia y Biblioteca de Documentos Local
 - [ ] Sistema de archivos mediante SwiftData (guardar rutas locales sin duplicar archivos en disco).
