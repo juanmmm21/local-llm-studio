@@ -4,15 +4,15 @@ Entorno de escritorio nativo para macOS (SwiftUI) para gestionar e interactuar c
 
 ## Filosofía
 
-- **100% Local:** toda la inferencia ocurre en tu Mac mediante Ollama (`localhost:11434`).
-- **Privacidad absoluta:** cero llamadas a APIs externas de internet. La única comunicación de red es HTTP local hacia `127.0.0.1`.
+- **Inferencia 100% local:** los modelos siempre corren en tu Mac mediante Ollama (`localhost:11434`). El chat funciona sin conexión.
+- **Privacidad por defecto:** la app solo usa internet en dos casos controlados por ti: descargar modelos desde el catálogo integrado (vía Ollama) y la búsqueda web opcional del asistente (desactivada por defecto).
 - **Sin dependencias externas:** solo frameworks nativos de Apple (SwiftUI, SwiftData, Foundation, Network).
 
 ## Requisitos
 
 - macOS 14.0 o superior.
 - Xcode 16 o superior.
-- [Ollama](https://ollama.com) instalado y en ejecución (`ollama serve`).
+- [Ollama](https://ollama.com) instalado. La app lo arranca sola en segundo plano si no está en ejecución.
 
 ## Compilar
 
@@ -32,10 +32,9 @@ local-llm-studio/
 └── Resources/      # Assets y entitlements
 ```
 
-## Estado (Fase 1)
+## Estado
 
-- [x] Estructura base del proyecto.
-- [x] `OllamaService`: cliente asíncrono para listar modelos instalados (`GET /api/tags`).
-- [x] Chat con streaming (`POST /api/chat`, NDJSON token a token).
-- [x] UI de tres zonas (Sidebar de modelos + Chat + Selector en la barra superior).
-- [ ] Persistencia de sesiones de chat con SwiftData (Fase 2).
+- [x] **Fase 1:** conectividad local (listado de modelos, chat con streaming, UI de tres zonas, auto-arranque de Ollama).
+- [ ] **Fase 2:** catálogo integrado con descarga de modelos con un clic (en desarrollo).
+- [ ] **Fase 3:** persistencia con SwiftData y biblioteca de documentos para RAG privado.
+- [ ] **Fase 4:** búsqueda web híbrida opcional (el modelo local responde con contexto de internet, con interruptor de privacidad).

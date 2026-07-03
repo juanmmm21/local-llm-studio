@@ -1,8 +1,8 @@
-# CLAUDE.md - Entorno Offline y Git Autónomo
+# CLAUDE.md - Entorno Local-First y Git Autónomo
 
 ## Información del Repositorio
 - **URL:** https://github.com/juanmmm21/local-llm-studio
-- **Filosofía:** 100% Local / Privacidad Absoluta / Zero-Network (Sin acceso a Internet).
+- **Filosofía:** Local-First / Privacidad por defecto. La inferencia es siempre 100% local (Ollama en `localhost:11434`). El acceso a internet solo está permitido para dos funciones explícitas: la descarga de modelos a través de Ollama (`/api/pull`) y la búsqueda web opcional del asistente, que el usuario debe activar manualmente (off por defecto).
 
 ## Automatización de Git (Flujo Autónomo)
 - **Ejecución de Commits:** Tras completar un cambio lógico, refactorización o corrección que compile con éxito, se deben automatizar las acciones de Git. 
