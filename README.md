@@ -35,6 +35,6 @@ local-llm-studio/
 ## Estado
 
 - [x] **Fase 1:** conectividad local (listado de modelos, chat con streaming, UI de tres zonas, auto-arranque de Ollama).
-- [ ] **Fase 2:** catálogo integrado con descarga de modelos con un clic (en desarrollo).
+- [x] **Fase 2:** catálogo integrado con descarga de modelos con un clic y progreso en vivo.
 - [ ] **Fase 3:** persistencia con SwiftData y biblioteca de documentos para RAG privado.
 - [ ] **Fase 4:** búsqueda web híbrida opcional (el modelo local responde con contexto de internet, con interruptor de privacidad).

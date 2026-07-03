@@ -20,10 +20,10 @@ El principio rector del proyecto es **local-first con privacidad por defecto**: 
 - [x] Cliente HTTP asíncrono para interactuar con el endpoint local de Ollama (`/api/tags` y `/api/chat`).
 - [x] Implementación de streaming de texto en la interfaz sin latencia ni bloqueos de memoria.
 
-### Fase 2: Catálogo y Gestión de Modelos In-App (En Desarrollo)
-- [ ] Catálogo curado de los modelos más relevantes (Llama, DeepSeek, Mistral, Gemma, Qwen, Phi...).
-- [ ] Descarga con un clic mediante `/api/pull` de Ollama, con barra de progreso en la UI. Sin consola.
-- [ ] Refresco automático de la lista de modelos instalados al terminar cada descarga.
+### Fase 2: Catálogo y Gestión de Modelos In-App (Completada)
+- [x] Catálogo curado de los modelos más relevantes (Llama, DeepSeek, Mistral, Gemma, Qwen, Phi...).
+- [x] Descarga con un clic mediante `/api/pull` de Ollama, con barra de progreso en la UI. Sin consola.
+- [x] Refresco automático de la lista de modelos instalados al terminar cada descarga.
 
 ### Fase 3: Persistencia y Biblioteca de Documentos Local
 - [ ] Sistema de archivos mediante SwiftData (guardar rutas locales sin duplicar archivos en disco).
