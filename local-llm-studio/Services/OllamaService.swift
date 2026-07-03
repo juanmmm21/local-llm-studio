@@ -75,6 +75,75 @@ actor OllamaService {
         }
     }
 
+    /// Envía una conversación al modelo indicado (`POST /api/chat`) y devuelve
+    /// los fragmentos de texto generados como un stream asíncrono.
+    ///
+    /// Ollama responde en NDJSON (un objeto JSON por línea); cada línea se
+    /// decodifica y se emite su `message.content` en cuanto llega, lo que
+    /// permite pintar la respuesta token a token sin bloquear la UI.
+    func streamChat(model: String, messages: [ChatMessage]) async throws -> AsyncThrowingStream<String, Error> {
+        let url = baseURL.appending(path: "/api/chat")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // La generación puede tardar minutos en modelos grandes; el timeout
+        // corto de la sesión solo debe aplicar a peticiones de metadatos.
+        request.timeoutInterval = 600
+
+        let body = OllamaChatRequest(
+            model: model,
+            messages: messages.map(\.asRequestMessage),
+            stream: true
+        )
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let bytes: URLSession.AsyncBytes
+        let response: URLResponse
+        do {
+            (bytes, response) = try await session.bytes(for: request)
+        } catch {
+            throw OllamaServiceError.serverUnavailable
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OllamaServiceError.serverUnavailable
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw OllamaServiceError.unexpectedStatusCode(httpResponse.statusCode)
+        }
+
+        let decoder = self.decoder
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await line in bytes.lines {
+                        guard !line.isEmpty, let data = line.data(using: .utf8) else { continue }
+                        let chunk: OllamaChatChunk
+                        do {
+                            chunk = try decoder.decode(OllamaChatChunk.self, from: data)
+                        } catch {
+                            throw OllamaServiceError.decodingFailed(error)
+                        }
+                        if let content = chunk.message?.content, !content.isEmpty {
+                            continuation.yield(content)
+                        }
+                        if chunk.done {
+                            break
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in
+                // Cancela la lectura del socket si la UI deja de consumir
+                // el stream (p. ej. el usuario pulsa "Detener").
+                task.cancel()
+            }
+        }
+    }
+
     // MARK: - Transporte
 
     private func get<Response: Decodable>(_ path: String) async throws -> Response {
