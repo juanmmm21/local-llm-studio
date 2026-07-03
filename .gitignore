@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+
+# Swift Package Manager (solo caches locales; sin dependencias externas por política)
+.build/
+.swiftpm/
