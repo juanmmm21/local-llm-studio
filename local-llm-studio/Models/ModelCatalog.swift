@@ -90,7 +90,7 @@ extension CatalogEntry {
             tag: "nomic-embed-text",
             displayName: "Nomic Embed Text",
             vendor: "Nomic AI",
-            summary: "Modelo de embeddings para la biblioteca RAG local (Fase 3). No es de chat.",
+            summary: "Índice semántico de la biblioteca RAG. La app lo instala automáticamente y no aparece en el chat.",
             approximateSize: "274 MB"
         )
     ]

@@ -60,6 +60,10 @@ struct ContentView: View {
 
             await modelList.loadModels()
             normalizeModelSelection()
+
+            // Deja listo el índice semántico de la biblioteca desde el
+            // primer arranque, sin pasos manuales.
+            await modelList.ensureEmbeddingModel()
         }
     }
 
@@ -123,6 +127,11 @@ struct ContentView: View {
                 Spacer()
                 Button("Catálogo") { isCatalogPresented = true }
                     .controlSize(.small)
+
+            case .loaded where modelList.isInstallingEmbedder:
+                ProgressView().controlSize(.mini)
+                Text("Preparando índice semántico…")
+                    .help("Descargando nomic-embed-text para la biblioteca RAG")
 
             case .loaded:
                 Image(systemName: "checkmark.circle.fill")

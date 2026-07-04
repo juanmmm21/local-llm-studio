@@ -33,7 +33,14 @@ final class ModelListViewModel {
         models.filter { !$0.name.localizedCaseInsensitiveContains("embed") }
     }
 
+    /// `true` mientras se descarga el modelo de embeddings en segundo plano.
+    private(set) var isInstallingEmbedder = false
+
+    /// Modelo de embeddings que la app instala por defecto para el RAG.
+    static let embeddingModelTag = "nomic-embed-text"
+
     private let service: OllamaService
+    private var didAttemptEmbedderInstall = false
 
     /// Tiempo máximo de espera a que el servidor arranque (en tandas de 0,5 s).
     private static let startupPollAttempts = 20
@@ -57,6 +64,33 @@ final class ModelListViewModel {
                 models = []
                 state = .failed(message: failureMessage(for: error))
             }
+        }
+    }
+
+    // MARK: - Modelo de embeddings por defecto
+
+    /// Instala nomic-embed-text en segundo plano si aún no está, para que
+    /// la biblioteca RAG tenga búsqueda semántica desde el primer uso.
+    /// Es silencioso: si falla (p. ej. sin internet), el RAG funciona con
+    /// palabras clave y se reintentará en el próximo arranque.
+    func ensureEmbeddingModel() async {
+        guard !didAttemptEmbedderInstall, state == .loaded else { return }
+        didAttemptEmbedderInstall = true
+
+        let alreadyInstalled = models.contains {
+            $0.name == Self.embeddingModelTag || $0.name.hasPrefix(Self.embeddingModelTag + ":")
+        }
+        guard !alreadyInstalled else { return }
+
+        isInstallingEmbedder = true
+        defer { isInstallingEmbedder = false }
+
+        do {
+            let stream = try await service.pullModel(tag: Self.embeddingModelTag)
+            for try await _ in stream { /* progreso silencioso */ }
+            models = (try? await service.listLocalModels()) ?? models
+        } catch {
+            // Sin conexión o registro no disponible: no es un error para la UI.
         }
     }
 
