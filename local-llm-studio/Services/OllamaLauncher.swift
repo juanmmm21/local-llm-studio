@@ -17,6 +17,11 @@ enum OllamaLauncher {
         case notInstalled
     }
 
+    /// `true` si la app de escritorio de Ollama está instalada en el Mac.
+    static var isAppInstalled: Bool {
+        candidateURLs.contains { FileManager.default.fileExists(atPath: $0.path) }
+    }
+
     /// Rutas habituales donde vive la app de escritorio de Ollama.
     private static var candidateURLs: [URL] {
         var urls = [URL(filePath: "/Applications/Ollama.app")]

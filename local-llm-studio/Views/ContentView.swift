@@ -33,11 +33,18 @@ struct ContentView: View {
             sidebar
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260)
         } detail: {
-            ChatView(viewModel: chat, selectedModel: selectedModel) { urls in
-                // Documentos soltados sobre el chat: a la biblioteca RAG,
-                // abriéndola para que se vea el progreso de indexación.
-                library.importDocuments(at: urls, context: modelContext)
-                isLibraryPresented = true
+            if case .failed = modelList.state, !OllamaLauncher.isAppInstalled {
+                // Primer arranque sin Ollama: guía en lugar de error.
+                OnboardingView {
+                    Task { await modelList.loadModels() }
+                }
+            } else {
+                ChatView(viewModel: chat, selectedModel: selectedModel) { urls in
+                    // Documentos soltados sobre el chat: a la biblioteca RAG,
+                    // abriéndola para que se vea el progreso de indexación.
+                    library.importDocuments(at: urls, context: modelContext)
+                    isLibraryPresented = true
+                }
             }
         }
         .navigationTitle("local-llm-studio")
