@@ -57,3 +57,8 @@ extension OllamaModel {
         ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
     }
 }
+
+/// Cuerpo de la petición `DELETE /api/delete` de Ollama.
+struct OllamaDeleteRequest: Encodable {
+    let model: String
+}

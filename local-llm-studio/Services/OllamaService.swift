@@ -219,6 +219,31 @@ actor OllamaService {
         }
     }
 
+    /// Elimina un modelo instalado (`DELETE /api/delete`) para liberar
+    /// espacio en disco. La operación es local: Ollama borra sus capas
+    /// de ~/.ollama/models.
+    func deleteModel(name: String) async throws {
+        let url = baseURL.appending(path: "/api/delete")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(OllamaDeleteRequest(model: name))
+
+        let response: URLResponse
+        do {
+            (_, response) = try await session.data(for: request)
+        } catch {
+            throw OllamaServiceError.serverUnavailable
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OllamaServiceError.serverUnavailable
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw OllamaServiceError.unexpectedStatusCode(httpResponse.statusCode)
+        }
+    }
+
     /// Genera embeddings semánticos localmente (`POST /api/embed`) con el
     /// modelo de embeddings indicado. Se usa para indexar la biblioteca
     /// RAG y para buscar fragmentos relevantes; todo ocurre en el Mac.
