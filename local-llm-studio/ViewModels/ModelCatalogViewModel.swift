@@ -76,6 +76,36 @@ final class ModelCatalogViewModel {
         tasks[entry.tag]?.cancel()
     }
 
+    // MARK: - Modelos en memoria
+
+    /// Modelos cargados ahora mismo en la RAM/VRAM del Mac.
+    private(set) var runningModels: [OllamaRunningModel] = []
+
+    /// Nombres de modelos que se están expulsando de la memoria.
+    private(set) var unloadingModels: Set<String> = []
+
+    /// Modelo en memoria correspondiente a un modelo instalado, si está cargado.
+    func runningInfo(for model: OllamaModel) -> OllamaRunningModel? {
+        runningModels.first { $0.name == model.name }
+    }
+
+    /// Consulta a Ollama qué modelos ocupan memoria en este momento.
+    func refreshRunningModels() async {
+        runningModels = (try? await service.runningModels()) ?? []
+    }
+
+    /// Expulsa un modelo de la memoria (sigue instalado en el disco).
+    func unload(_ model: OllamaRunningModel) {
+        guard !unloadingModels.contains(model.name) else { return }
+        unloadingModels.insert(model.name)
+
+        Task {
+            try? await service.unloadModel(name: model.name)
+            await refreshRunningModels()
+            unloadingModels.remove(model.name)
+        }
+    }
+
     // MARK: - Borrado de modelos instalados
 
     /// Nombres de modelos cuyo borrado está en curso.

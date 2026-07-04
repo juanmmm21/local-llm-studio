@@ -51,6 +51,9 @@ struct ModelCatalogView: View {
             footer
         }
         .frame(minWidth: 520, minHeight: 460)
+        .task {
+            await viewModel.refreshRunningModels()
+        }
         .confirmationDialog(
             "¿Eliminar «\(modelPendingDeletion?.name ?? "")»?",
             isPresented: Binding(
@@ -81,12 +84,33 @@ struct ModelCatalogView: View {
                         Label(parameters, systemImage: "slider.horizontal.3")
                     }
                     Label(model.formattedSize, systemImage: "internaldrive")
+                    if let running = viewModel.runningInfo(for: model) {
+                        Label("En memoria · \(running.formattedSize)", systemImage: "memorychip")
+                            .foregroundStyle(Color.accentColor)
+                            .help("Este modelo ocupa \(running.formattedSize) de RAM ahora mismo")
+                    }
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
 
             Spacer()
+
+            if let running = viewModel.runningInfo(for: model) {
+                if viewModel.unloadingModels.contains(model.name) {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Button {
+                        viewModel.unload(running)
+                    } label: {
+                        Image(systemName: "eject")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help("Liberar la memoria que ocupa (el modelo sigue instalado en el disco)")
+                }
+            }
 
             if viewModel.deletingModels.contains(model.name) {
                 ProgressView()

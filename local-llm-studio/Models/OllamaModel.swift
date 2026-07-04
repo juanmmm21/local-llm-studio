@@ -62,3 +62,44 @@ extension OllamaModel {
 struct OllamaDeleteRequest: Encodable {
     let model: String
 }
+
+/// Respuesta del endpoint `GET /api/ps`: modelos cargados en memoria.
+struct OllamaPSResponse: Decodable {
+    let models: [OllamaRunningModel]
+}
+
+/// Un modelo actualmente cargado en la RAM/VRAM del Mac.
+struct OllamaRunningModel: Decodable, Identifiable, Hashable {
+    let name: String
+    /// Memoria total que ocupa el modelo cargado, en bytes.
+    let size: Int64
+    /// Parte del modelo alojada en la memoria de la GPU, en bytes.
+    let sizeVRAM: Int64?
+    /// Momento en el que Ollama lo descargará de memoria si no se usa.
+    let expiresAt: Date?
+
+    var id: String { name }
+
+    var formattedSize: String {
+        ByteCountFormatter.string(fromByteCount: size, countStyle: .memory)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case size
+        case sizeVRAM = "size_vram"
+        case expiresAt = "expires_at"
+    }
+}
+
+/// Cuerpo de `POST /api/generate` usado solo para descargar un modelo de
+/// la memoria: `keep_alive: 0` hace que Ollama lo libere de inmediato.
+struct OllamaUnloadRequest: Encodable {
+    let model: String
+    let keepAlive: Int = 0
+
+    enum CodingKeys: String, CodingKey {
+        case model
+        case keepAlive = "keep_alive"
+    }
+}

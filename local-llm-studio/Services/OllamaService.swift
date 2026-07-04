@@ -256,6 +256,38 @@ actor OllamaService {
         }
     }
 
+    /// Lista los modelos cargados ahora mismo en memoria (`GET /api/ps`),
+    /// con la RAM/VRAM que ocupa cada uno.
+    func runningModels() async throws -> [OllamaRunningModel] {
+        let response: OllamaPSResponse = try await get("/api/ps")
+        return response.models.sorted { $0.size > $1.size }
+    }
+
+    /// Descarga un modelo de la memoria sin borrarlo del disco: se envía
+    /// una petición de generación vacía con `keep_alive: 0` y Ollama
+    /// libera la RAM/VRAM de inmediato.
+    func unloadModel(name: String) async throws {
+        let url = baseURL.appending(path: "/api/generate")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(OllamaUnloadRequest(model: name))
+
+        let response: URLResponse
+        do {
+            (_, response) = try await session.data(for: request)
+        } catch {
+            throw OllamaServiceError.serverUnavailable
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OllamaServiceError.serverUnavailable
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw OllamaServiceError.unexpectedStatusCode(httpResponse.statusCode)
+        }
+    }
+
     /// Genera embeddings semánticos localmente (`POST /api/embed`) con el
     /// modelo de embeddings indicado. Se usa para indexar la biblioteca
     /// RAG y para buscar fragmentos relevantes; todo ocurre en el Mac.
