@@ -81,6 +81,10 @@ struct ContentView: View {
             // Deja listo el índice semántico de la biblioteca desde el
             // primer arranque, sin pasos manuales.
             await modelList.ensureEmbeddingModel()
+
+            // Sincroniza las carpetas vigiladas: documentos nuevos se
+            // indexan y los borrados desaparecen de la biblioteca.
+            await library.rescanWatchedFolders(context: modelContext)
         }
     }
 

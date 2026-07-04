@@ -15,8 +15,10 @@ struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \LibraryDocument.addedAt, order: .reverse) private var documents: [LibraryDocument]
+    @Query(sort: \WatchedFolder.addedAt) private var folders: [WatchedFolder]
 
     @State private var isImporterPresented = false
+    @State private var isFolderImporterPresented = false
 
     private static let importTypes: [UTType] = [
         .pdf, .plainText, UTType(filenameExtension: "md") ?? .plainText
@@ -41,6 +43,13 @@ struct LibraryView: View {
             // estas URLs no sobrevive de forma fiable a un salto asíncrono.
             viewModel.importDocuments(at: urls, context: modelContext)
         }
+        .fileImporter(
+            isPresented: $isFolderImporterPresented,
+            allowedContentTypes: [.folder]
+        ) { result in
+            guard case .success(let url) = result else { return }
+            viewModel.addWatchedFolder(url: url, context: modelContext)
+        }
     }
 
     private var header: some View {
@@ -54,6 +63,14 @@ struct LibraryView: View {
             }
             Spacer()
             Button {
+                isFolderImporterPresented = true
+            } label: {
+                Label("Vigilar carpeta…", systemImage: "folder.badge.gearshape")
+            }
+            .disabled(viewModel.isIndexing)
+            .help("La carpeta se revisará en cada arranque: los documentos nuevos se indexan y los borrados desaparecen de la biblioteca")
+
+            Button {
                 isImporterPresented = true
             } label: {
                 Label("Añadir documentos", systemImage: "plus")
@@ -66,59 +83,124 @@ struct LibraryView: View {
 
     @ViewBuilder
     private var content: some View {
-        if documents.isEmpty {
+        if documents.isEmpty && folders.isEmpty {
             ContentUnavailableView {
                 Label("Biblioteca vacía", systemImage: "books.vertical")
             } description: {
-                Text("Añade archivos Markdown, TXT o PDF para que el asistente pueda consultarlos.")
+                Text("Añade archivos Markdown, TXT o PDF —o vigila una carpeta entera— para que el asistente pueda consultarlos.")
             } actions: {
                 Button("Añadir documentos") { isImporterPresented = true }
                     .buttonStyle(.borderedProminent)
+                Button("Vigilar carpeta…") { isFolderImporterPresented = true }
             }
             .frame(maxHeight: .infinity)
         } else {
-            List(documents) { document in
-                HStack(spacing: 12) {
-                    Image(systemName: icon(for: document))
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 24)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(document.name)
-                            .font(.headline)
-                        Text("\(document.chunks.count) fragmentos · añadido \(document.addedAt.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+            List {
+                if !folders.isEmpty {
+                    Section("Carpetas vigiladas") {
+                        ForEach(folders) { folder in
+                            folderRow(for: folder)
+                                .padding(.vertical, 2)
+                        }
                     }
-
-                    Spacer()
-
-                    if document.isIndexed {
-                        Label("Indexado", systemImage: "checkmark.seal.fill")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                            .help("Búsqueda semántica activa")
-                    } else {
-                        Label("Palabras clave", systemImage: "textformat.abc")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .help("Sin embeddings: descarga Nomic Embed Text del catálogo y reindexa")
-                    }
-
-                    Button {
-                        viewModel.delete(document, context: modelContext)
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .help("Eliminar de la biblioteca (no borra el archivo original)")
                 }
-                .padding(.vertical, 4)
+                Section(folders.isEmpty ? "Documentos" : "Todos los documentos") {
+                    ForEach(documents) { document in
+                        documentRow(for: document)
+                            .padding(.vertical, 4)
+                    }
+                }
             }
             .listStyle(.inset)
         }
+    }
+
+    private func folderRow(for folder: WatchedFolder) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "folder.badge.gearshape")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(folder.name)
+                    .font(.headline)
+                Text("\(folder.documents.count) documentos · se revisa en cada arranque")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                Task { await viewModel.rescanWatchedFolders(context: modelContext) }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .disabled(viewModel.isIndexing)
+            .help("Buscar cambios en la carpeta ahora")
+
+            Button {
+                viewModel.removeWatchedFolder(folder, context: modelContext)
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Dejar de vigilar (no borra la carpeta ni sus archivos)")
+        }
+    }
+
+    private func documentRow(for document: LibraryDocument) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon(for: document))
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(document.name)
+                    .font(.headline)
+                Text(documentSubtitle(for: document))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            if document.isIndexed {
+                Label("Indexado", systemImage: "checkmark.seal.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+                    .help("Búsqueda semántica activa")
+            } else {
+                Label("Palabras clave", systemImage: "textformat.abc")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .help("Sin embeddings: descarga Nomic Embed Text del catálogo y reindexa")
+            }
+
+            Button {
+                viewModel.delete(document, context: modelContext)
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Eliminar de la biblioteca (no borra el archivo original)")
+        }
+    }
+
+    private func documentSubtitle(for document: LibraryDocument) -> String {
+        var subtitle = "\(document.chunks.count) fragmentos"
+        if let folder = document.folder {
+            subtitle += " · de la carpeta «\(folder.name)»"
+        } else {
+            subtitle += " · añadido \(document.addedAt.formatted(date: .abbreviated, time: .shortened))"
+        }
+        return subtitle
     }
 
     private var footer: some View {

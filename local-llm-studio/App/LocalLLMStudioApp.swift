@@ -16,7 +16,7 @@ struct LocalLLMStudioApp: App {
             ContentView()
         }
         .windowStyle(.automatic)
-        .modelContainer(for: [ChatSession.self, LibraryDocument.self])
+        .modelContainer(for: [ChatSession.self, LibraryDocument.self, WatchedFolder.self])
 
         Settings {
             SettingsView()
