@@ -9,6 +9,7 @@ Aplicación nativa de macOS (SwiftUI) para gestionar y conversar con modelos de 
 ![UI](https://img.shields.io/badge/SwiftUI-nativo-8A2BE2)
 ![Dependencias](https://img.shields.io/badge/dependencias%20externas-0-brightgreen)
 ![Privacidad](https://img.shields.io/badge/inferencia-100%25%20local-success)
+![Licencia](https://img.shields.io/badge/licencia-MIT-lightgrey)
 
 ---
 
@@ -133,6 +134,10 @@ local-llm-studio/
 - [x] **Fase 4** — Búsqueda web híbrida con interruptor de privacidad e indicador de fuente.
 - [x] **Fase 5** — Gestión de modelos instalados, índice semántico auto-instalado, renombrado y búsqueda del historial, lectura completa de páginas y chat con imágenes.
 - [ ] Próximamente: renderizado Markdown enriquecido, exportación de conversaciones, ajustes de generación y más (ver issues).
+
+## Licencia
+
+Publicado bajo la [licencia MIT](LICENSE).
 
 ## Autor
 
