@@ -25,6 +25,8 @@ struct ChatMessage: Identifiable, Hashable {
     var usedWeb: Bool
     /// Imagen adjunta (PNG/JPEG) para modelos con visión como LLaVA.
     var imageData: Data?
+    /// Estadísticas de la generación (solo respuestas del asistente).
+    var metrics: GenerationMetrics?
 
     init(
         id: UUID = UUID(),
@@ -32,7 +34,8 @@ struct ChatMessage: Identifiable, Hashable {
         content: String,
         createdAt: Date = .now,
         usedWeb: Bool = false,
-        imageData: Data? = nil
+        imageData: Data? = nil,
+        metrics: GenerationMetrics? = nil
     ) {
         self.id = id
         self.role = role
@@ -40,6 +43,7 @@ struct ChatMessage: Identifiable, Hashable {
         self.createdAt = createdAt
         self.usedWeb = usedWeb
         self.imageData = imageData
+        self.metrics = metrics
     }
 }
 
@@ -81,11 +85,39 @@ struct OllamaChatRequest: Encodable {
 struct OllamaChatChunk: Decodable {
     let message: Message?
     let done: Bool
+    /// Tokens generados (solo en el fragmento final).
+    let evalCount: Int?
+    /// Duración de la generación en nanosegundos (solo en el final).
+    let evalDuration: Int64?
 
     struct Message: Decodable {
         let role: String
         let content: String
     }
+
+    enum CodingKeys: String, CodingKey {
+        case message
+        case done
+        case evalCount = "eval_count"
+        case evalDuration = "eval_duration"
+    }
+}
+
+/// Estadísticas de una generación completada, para mostrar en la UI.
+struct GenerationMetrics: Hashable, Codable, Sendable {
+    let modelName: String
+    let tokenCount: Int
+    let durationSeconds: Double
+
+    var tokensPerSecond: Double {
+        durationSeconds > 0 ? Double(tokenCount) / durationSeconds : 0
+    }
+}
+
+/// Eventos del stream de chat: tokens de texto y las métricas finales.
+enum ChatStreamEvent: Sendable {
+    case token(String)
+    case completed(GenerationMetrics?)
 }
 
 extension ChatMessage {

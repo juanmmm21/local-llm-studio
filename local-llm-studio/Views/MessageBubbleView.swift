@@ -53,11 +53,19 @@ struct MessageBubbleView: View {
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
 
-                if !isUser && message.usedWeb {
-                    Label("Con información de internet", systemImage: "globe")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .help("Esta respuesta usó resultados de una búsqueda web")
+                if !isUser && (message.usedWeb || message.metrics != nil) {
+                    HStack(spacing: 10) {
+                        if let metrics = message.metrics {
+                            Text("\(metrics.modelName) · \(metrics.tokensPerSecond, format: .number.precision(.fractionLength(1))) tok/s · \(metrics.durationSeconds, format: .number.precision(.fractionLength(1))) s")
+                                .help("\(metrics.tokenCount) tokens generados")
+                        }
+                        if message.usedWeb {
+                            Label("Con información de internet", systemImage: "globe")
+                                .help("Esta respuesta usó resultados de una búsqueda web")
+                        }
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 }
             }
 

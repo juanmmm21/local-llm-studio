@@ -120,8 +120,13 @@ final class ChatViewModel {
 
             do {
                 let stream = try await service.streamChat(model: model, messages: history)
-                for try await fragment in stream {
-                    assistantMessage.content += fragment
+                for try await event in stream {
+                    switch event {
+                    case .token(let fragment):
+                        assistantMessage.content += fragment
+                    case .completed(let metrics):
+                        assistantMessage.metrics = metrics
+                    }
                     messages[assistantIndex] = assistantMessage
                 }
             } catch is CancellationError {
@@ -222,7 +227,8 @@ final class ChatViewModel {
             content: message.content,
             createdAt: message.createdAt,
             usedWeb: message.usedWeb,
-            imageData: message.imageData
+            imageData: message.imageData,
+            metrics: message.metrics
         )
         stored.session = session
         modelContext.insert(stored)

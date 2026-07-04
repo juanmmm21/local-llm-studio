@@ -78,12 +78,13 @@ actor OllamaService {
     }
 
     /// Envía una conversación al modelo indicado (`POST /api/chat`) y devuelve
-    /// los fragmentos de texto generados como un stream asíncrono.
+    /// los eventos generados como un stream asíncrono: los tokens de texto
+    /// según llegan y, al terminar, las métricas de la generación.
     ///
     /// Ollama responde en NDJSON (un objeto JSON por línea); cada línea se
     /// decodifica y se emite su `message.content` en cuanto llega, lo que
     /// permite pintar la respuesta token a token sin bloquear la UI.
-    func streamChat(model: String, messages: [ChatMessage]) async throws -> AsyncThrowingStream<String, Error> {
+    func streamChat(model: String, messages: [ChatMessage]) async throws -> AsyncThrowingStream<ChatStreamEvent, Error> {
         let url = baseURL.appending(path: "/api/chat")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -131,9 +132,18 @@ actor OllamaService {
                             throw OllamaServiceError.decodingFailed(error)
                         }
                         if let content = chunk.message?.content, !content.isEmpty {
-                            continuation.yield(content)
+                            continuation.yield(.token(content))
                         }
                         if chunk.done {
+                            var metrics: GenerationMetrics?
+                            if let tokens = chunk.evalCount, let nanoseconds = chunk.evalDuration {
+                                metrics = GenerationMetrics(
+                                    modelName: model,
+                                    tokenCount: tokens,
+                                    durationSeconds: Double(nanoseconds) / 1_000_000_000
+                                )
+                            }
+                            continuation.yield(.completed(metrics))
                             break
                         }
                     }
