@@ -14,6 +14,9 @@ final class ChatSession {
     var title: String
     var createdAt: Date
     var updatedAt: Date
+    /// Identificador de la plantilla de asistente activa en esta
+    /// conversación (`AssistantPersona`). `nil` = asistente general.
+    var personaID: String?
 
     @Relationship(deleteRule: .cascade, inverse: \StoredMessage.session)
     var messages: [StoredMessage] = []

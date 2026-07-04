@@ -73,6 +73,20 @@ final class ChatViewModel {
         errorMessage = nil
     }
 
+    // MARK: - Plantillas de asistente
+
+    /// Plantilla activa en la conversación actual, si la hay.
+    var persona: AssistantPersona? {
+        AssistantPersona.persona(withID: session?.personaID)
+    }
+
+    /// Cambia la plantilla de la conversación (nil = asistente general).
+    /// Afecta a los mensajes que se envíen a partir de ahora.
+    func selectPersona(_ persona: AssistantPersona?) {
+        session?.personaID = persona?.id
+        try? modelContext?.save()
+    }
+
     // MARK: - Generación
 
     /// Envía el borrador actual al modelo indicado y va acumulando la
@@ -146,8 +160,9 @@ final class ChatViewModel {
         isGenerating = true
 
         generationTask = Task {
-            // Instrucciones de sistema definidas por el usuario en Ajustes.
-            let systemPrompt = AppSettings.systemPrompt
+            // La plantilla de asistente de la conversación tiene prioridad
+            // sobre las instrucciones globales definidas en Ajustes.
+            let systemPrompt = persona?.prompt ?? AppSettings.systemPrompt
             if !systemPrompt.isEmpty {
                 history.insert(ChatMessage(role: .system, content: systemPrompt), at: 0)
             }

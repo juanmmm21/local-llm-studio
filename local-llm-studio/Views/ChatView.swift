@@ -166,6 +166,9 @@ struct ChatView: View {
             }
 
             HStack(alignment: .bottom, spacing: 8) {
+                personaMenu
+                    .padding(.bottom, 6)
+
                 Toggle(isOn: $viewModel.useLibrary) {
                     Image(systemName: viewModel.useLibrary ? "books.vertical.fill" : "books.vertical")
                 }
@@ -242,6 +245,42 @@ struct ChatView: View {
             }
         }
         .padding(12)
+    }
+
+    /// Selector de plantilla de asistente para esta conversación.
+    private var personaMenu: some View {
+        Menu {
+            Button {
+                viewModel.selectPersona(nil)
+            } label: {
+                if viewModel.persona == nil {
+                    Label("Asistente general", systemImage: "checkmark")
+                } else {
+                    Text("Asistente general")
+                }
+            }
+            Divider()
+            ForEach(AssistantPersona.curated) { persona in
+                Button {
+                    viewModel.selectPersona(persona)
+                } label: {
+                    if viewModel.persona == persona {
+                        Label(persona.name, systemImage: "checkmark")
+                    } else {
+                        Label(persona.name, systemImage: persona.icon)
+                    }
+                }
+                .help(persona.summary)
+            }
+        } label: {
+            Image(systemName: viewModel.persona?.icon ?? "person.crop.circle")
+                .foregroundStyle(viewModel.persona == nil ? Color.secondary : Color.accentColor)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(viewModel.persona.map { "Asistente: \($0.name) — \($0.summary)" }
+              ?? "Elegir una plantilla de asistente para esta conversación")
     }
 
     private func sendDraft() {
