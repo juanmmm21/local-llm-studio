@@ -31,8 +31,19 @@ struct MessageBubbleView: View {
                             .controlSize(.small)
                             .padding(4)
                     } else {
-                        Text(LocalizedStringKey(message.content))
-                            .textSelection(.enabled)
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let imageData = message.imageData, let image = NSImage(data: imageData) {
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: 280, maxHeight: 280)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            if !message.content.isEmpty {
+                                Text(LocalizedStringKey(message.content))
+                                    .textSelection(.enabled)
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 12)

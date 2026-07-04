@@ -7,10 +7,12 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ChatView: View {
     @Bindable var viewModel: ChatViewModel
     let selectedModel: OllamaModel?
+    @State private var isImageImporterPresented = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -67,6 +69,24 @@ struct ChatView: View {
                     .foregroundStyle(.red)
             }
 
+            if let imageData = viewModel.draftImage, let preview = NSImage(data: imageData) {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(nsImage: preview)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 72, height: 72)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    Button {
+                        viewModel.draftImage = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help("Quitar la imagen")
+                }
+            }
+
             HStack(alignment: .bottom, spacing: 8) {
                 Toggle(isOn: $viewModel.useLibrary) {
                     Image(systemName: viewModel.useLibrary ? "books.vertical.fill" : "books.vertical")
@@ -88,6 +108,25 @@ struct ChatView: View {
                       ? "Búsqueda web activada: tus preguntas se enviarán a DuckDuckGo para buscar contexto"
                       : "Búsqueda web desactivada: todo se procesa en tu Mac")
                 .padding(.bottom, 6)
+
+                Button {
+                    isImageImporterPresented = true
+                } label: {
+                    Image(systemName: "photo.badge.plus")
+                }
+                .buttonStyle(.borderless)
+                .help("Adjuntar una imagen (requiere un modelo con visión, como LLaVA)")
+                .padding(.bottom, 6)
+                .fileImporter(
+                    isPresented: $isImageImporterPresented,
+                    allowedContentTypes: [.png, .jpeg]
+                ) { result in
+                    guard case .success(let url) = result else { return }
+                    // Lectura inmediata dentro del ámbito de seguridad del sandbox.
+                    let accessGranted = url.startAccessingSecurityScopedResource()
+                    defer { if accessGranted { url.stopAccessingSecurityScopedResource() } }
+                    viewModel.draftImage = try? Data(contentsOf: url)
+                }
 
                 TextField(
                     selectedModel.map { "Mensaje para \($0.name)…" } ?? "Selecciona un modelo para empezar",
