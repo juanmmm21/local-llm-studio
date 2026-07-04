@@ -33,7 +33,12 @@ struct ContentView: View {
             sidebar
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260)
         } detail: {
-            ChatView(viewModel: chat, selectedModel: selectedModel)
+            ChatView(viewModel: chat, selectedModel: selectedModel) { urls in
+                // Documentos soltados sobre el chat: a la biblioteca RAG,
+                // abriéndola para que se vea el progreso de indexación.
+                library.importDocuments(at: urls, context: modelContext)
+                isLibraryPresented = true
+            }
         }
         .navigationTitle("local-llm-studio")
         .toolbar { toolbarContent }

@@ -12,7 +12,14 @@ import UniformTypeIdentifiers
 struct ChatView: View {
     @Bindable var viewModel: ChatViewModel
     let selectedModel: OllamaModel?
+    /// Recibe los documentos (PDF, TXT, MD) soltados sobre el chat para
+    /// añadirlos a la biblioteca RAG.
+    var onDropDocuments: ([URL]) -> Void = { _ in }
+
     @State private var isImageImporterPresented = false
+    @State private var isDropTargeted = false
+
+    private static let imageExtensions: Set<String> = ["png", "jpg", "jpeg"]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -20,6 +27,54 @@ struct ChatView: View {
             Divider()
             composer
         }
+        .dropDestination(for: URL.self) { urls, _ in
+            handleDrop(of: urls)
+        } isTargeted: { targeted in
+            isDropTargeted = targeted
+        }
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [8]))
+                    .background(Color.accentColor.opacity(0.08))
+                    .overlay {
+                        Label("Suelta imágenes para el mensaje o documentos para la biblioteca", systemImage: "arrow.down.doc")
+                            .font(.headline)
+                            .padding(12)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    }
+                    .padding(8)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    /// Reparte lo soltado: imágenes al borrador del mensaje, documentos
+    /// compatibles a la biblioteca. La lectura de la imagen es inmediata
+    /// por el permiso efímero del sandbox.
+    private func handleDrop(of urls: [URL]) -> Bool {
+        var handled = false
+        var documents: [URL] = []
+
+        for url in urls {
+            let ext = url.pathExtension.lowercased()
+            if Self.imageExtensions.contains(ext) {
+                let accessGranted = url.startAccessingSecurityScopedResource()
+                defer { if accessGranted { url.stopAccessingSecurityScopedResource() } }
+                if let data = try? Data(contentsOf: url) {
+                    viewModel.draftImage = data
+                    handled = true
+                }
+            } else if DocumentIndexer.supportedExtensions.contains(ext) {
+                documents.append(url)
+            }
+        }
+
+        if !documents.isEmpty {
+            onDropDocuments(documents)
+            handled = true
+        }
+        return handled
     }
 
     // MARK: - Historial
