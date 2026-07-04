@@ -154,6 +154,8 @@ final class ChatViewModel {
     /// actual, cuyo último mensaje debe ser del usuario.
     private func generate(model: String) {
         let prompt = messages.last(where: { $0.role == .user })?.content ?? ""
+        // Tras el primer intercambio se genera un título automático.
+        let isFirstExchange = !messages.contains { $0.role == .assistant }
 
         // El contexto RAG se envía a la API pero no se guarda ni se pinta.
         var history = messages
@@ -205,13 +207,72 @@ final class ChatViewModel {
                 }
             }
 
-            if messages.indices.contains(assistantIndex),
-               !messages[assistantIndex].content.isEmpty {
+            let hasResponse = messages.indices.contains(assistantIndex)
+                && !messages[assistantIndex].content.isEmpty
+            if hasResponse {
                 persist(messages[assistantIndex])
             }
 
             isGenerating = false
+
+            if hasResponse && isFirstExchange {
+                await generateTitle(model: model)
+            }
         }
+    }
+
+    /// Pide al modelo local un título corto para la conversación tras el
+    /// primer intercambio, sustituyendo el título provisional (el prompt
+    /// truncado). Cualquier fallo se ignora: el provisional ya es válido.
+    private func generateTitle(model: String) async {
+        guard let session else { return }
+
+        let transcript = messages.prefix(2)
+            .map { "\($0.role == .user ? "Usuario" : "Asistente"): \(String($0.content.prefix(500)))" }
+            .joined(separator: "\n\n")
+
+        let request = [
+            ChatMessage(
+                role: .system,
+                content: "Resume la conversación en un título muy breve, de cinco palabras como máximo, en el idioma de la conversación. Responde únicamente con el título: sin comillas, sin punto final y sin explicaciones."
+            ),
+            ChatMessage(role: .user, content: transcript)
+        ]
+
+        guard let stream = try? await service.streamChat(model: model, messages: request) else { return }
+        var raw = ""
+        do {
+            for try await event in stream {
+                if case .token(let fragment) = event {
+                    raw += fragment
+                }
+            }
+        } catch {
+            return
+        }
+
+        let title = Self.sanitizeTitle(raw)
+        guard !title.isEmpty else { return }
+        session.title = title
+        try? modelContext?.save()
+    }
+
+    /// Limpia la respuesta del modelo para usarla como título: elimina el
+    /// razonamiento de modelos tipo DeepSeek-R1 (<think>…</think>),
+    /// comillas y saltos de línea, y la recorta a un largo razonable.
+    static func sanitizeTitle(_ raw: String) -> String {
+        var title = raw.replacingOccurrences(
+            of: "<think>[\\s\\S]*?</think>",
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        title = title
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty } ?? ""
+        title = title.trimmingCharacters(in: CharacterSet(charactersIn: "\"«»'`“”.:"))
+            .trimmingCharacters(in: .whitespaces)
+        return String(title.prefix(60))
     }
 
     /// Detiene la generación en curso conservando el texto ya recibido.
