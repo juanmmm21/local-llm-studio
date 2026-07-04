@@ -46,6 +46,14 @@ Los asistentes de IA en la nube obligan a elegir entre capacidad y privacidad. *
 - Sin claves de API ni cuentas: búsqueda vía DuckDuckGo y **lectura del contenido completo** de las páginas principales, limpiado de forma nativa.
 - El modelo local responde citando las fuentes con su URL, y cada respuesta que usó internet queda **marcada visiblemente** en el chat (también en el historial).
 
+### Experiencia de producto
+- **Markdown enriquecido** en las respuestas: bloques de código con etiqueta de lenguaje y botón de copiar, también durante el streaming.
+- **Ventana de Ajustes nativa (⌘,)**: host y puerto de Ollama, instrucciones de sistema, temperatura y ventana de contexto.
+- **Métricas de generación** bajo cada respuesta: modelo, tokens por segundo y duración.
+- **Exporta cualquier conversación a Markdown** desde el menú contextual del historial.
+- **Arrastra y suelta** sobre el chat: imágenes para el mensaje, documentos para la biblioteca RAG.
+- **Onboarding de primer arranque**: si Ollama no está instalado, una guía visual de tres pasos sustituye al mensaje de error.
+
 ## Arquitectura
 
 ```mermaid
@@ -118,12 +126,12 @@ O simplemente abre `local-llm-studio.xcodeproj` en Xcode y pulsa ⌘R. En el pri
 
 ```
 local-llm-studio/
-├── App/            # Punto de entrada y contenedor SwiftData
-├── Models/         # Dominio + contratos JSON de la API local de Ollama
-├── Services/       # OllamaService, indexado RAG, recuperación de contexto, búsqueda web
+├── App/            # Punto de entrada, contenedor SwiftData y escena de Ajustes
+├── Models/         # Dominio, ajustes y contratos JSON de la API local de Ollama
+├── Services/       # OllamaService, indexado RAG, búsqueda web, exportación
 ├── ViewModels/     # Estado observable (@Observable, MainActor)
-├── Views/          # Vistas SwiftUI (chat, catálogo, biblioteca)
-└── Resources/      # Assets y entitlements (App Sandbox)
+├── Views/          # Vistas SwiftUI (chat, catálogo, biblioteca, onboarding, ajustes)
+└── Resources/      # Assets (icono propio) y entitlements (App Sandbox)
 ```
 
 ## Hoja de ruta
@@ -133,7 +141,8 @@ local-llm-studio/
 - [x] **Fase 3** — Persistencia con SwiftData y biblioteca RAG con embeddings locales.
 - [x] **Fase 4** — Búsqueda web híbrida con interruptor de privacidad e indicador de fuente.
 - [x] **Fase 5** — Gestión de modelos instalados, índice semántico auto-instalado, renombrado y búsqueda del historial, lectura completa de páginas y chat con imágenes.
-- [ ] Próximamente: renderizado Markdown enriquecido, exportación de conversaciones, ajustes de generación y más (ver issues).
+- [x] **Fase 6** — Experiencia de producto: Markdown enriquecido, Ajustes nativos, métricas, exportación, arrastrar y soltar, onboarding e icono propio.
+- [ ] Próximamente: más mejoras en la hoja de ruta (ver issues).
 
 ## Licencia
 

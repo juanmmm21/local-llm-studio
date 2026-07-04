@@ -43,3 +43,13 @@ El principio rector del proyecto es **local-first con privacidad por defecto**: 
 - [x] Renombrado de conversaciones y búsqueda en el historial (por título y contenido de los mensajes).
 - [x] Lectura del contenido completo de las páginas web principales en la búsqueda híbrida (no solo los resúmenes del buscador).
 - [x] Chat multimodal: adjuntar imágenes PNG/JPEG para modelos con visión (LLaVA), con persistencia en el historial.
+
+### Fase 6: Experiencia de Producto (Completada)
+- [x] Licencia MIT publicada en el repositorio.
+- [x] Renderizado Markdown enriquecido en las respuestas: bloques de código con etiqueta de lenguaje y botón de copiar.
+- [x] Ventana de Ajustes nativa (⌘,): host/puerto de Ollama, instrucciones de sistema, temperatura y ventana de contexto.
+- [x] Métricas de generación bajo cada respuesta: modelo usado, tokens por segundo y duración.
+- [x] Exportación de conversaciones a Markdown desde el menú contextual del historial.
+- [x] Arrastrar y soltar sobre el chat: imágenes al mensaje, documentos a la biblioteca RAG.
+- [x] Onboarding de primer arranque: guía visual de instalación cuando Ollama no está en el Mac.
+- [x] Icono de app propio con todos los tamaños del set de macOS (generador en `Scripts/make-app-icon.swift`).
