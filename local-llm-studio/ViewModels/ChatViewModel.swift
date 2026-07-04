@@ -26,6 +26,9 @@ final class ChatViewModel {
     /// Texto que el usuario está escribiendo en el campo de entrada.
     var draft = ""
 
+    /// Imagen adjunta al borrador, para modelos con visión (LLaVA).
+    var draftImage: Data?
+
     /// Si está activo, se buscan fragmentos relevantes de la biblioteca
     /// local y se inyectan como contexto en el prompt (RAG privado).
     var useLibrary = true
@@ -51,7 +54,8 @@ final class ChatViewModel {
     }
 
     var canSend: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isGenerating
+        let hasContent = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draftImage != nil
+        return hasContent && !isGenerating
     }
 
     // MARK: - Sesiones persistidas
@@ -75,27 +79,30 @@ final class ChatViewModel {
     /// respuesta en streaming sobre el último mensaje del asistente.
     func send(to model: String) {
         let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !prompt.isEmpty, !isGenerating else { return }
+        let image = draftImage
+        guard !prompt.isEmpty || image != nil, !isGenerating else { return }
 
         draft = ""
+        draftImage = nil
         errorMessage = nil
 
-        let userMessage = ChatMessage(role: .user, content: prompt)
+        let userMessage = ChatMessage(role: .user, content: prompt, imageData: image)
         messages.append(userMessage)
         persist(userMessage)
-        updateSessionMetadata(firstPrompt: prompt)
+        updateSessionMetadata(firstPrompt: prompt.isEmpty ? "Imagen adjunta" : prompt)
 
         // El contexto RAG se envía a la API pero no se guarda ni se pinta.
         var history = messages
         isGenerating = true
 
         generationTask = Task {
-            if useLibrary, let contextMessage = await libraryContextMessage(for: prompt) {
+            // Sin texto no hay consulta que buscar (p. ej. solo una imagen).
+            if useLibrary, !prompt.isEmpty, let contextMessage = await libraryContextMessage(for: prompt) {
                 history.insert(contextMessage, at: max(0, history.count - 1))
             }
 
             var usedWeb = false
-            if isWebSearchEnabled, let webMessage = await webContextMessage(for: prompt) {
+            if isWebSearchEnabled, !prompt.isEmpty, let webMessage = await webContextMessage(for: prompt) {
                 history.insert(webMessage, at: max(0, history.count - 1))
                 usedWeb = true
             }
@@ -208,7 +215,8 @@ final class ChatViewModel {
             role: message.role,
             content: message.content,
             createdAt: message.createdAt,
-            usedWeb: message.usedWeb
+            usedWeb: message.usedWeb,
+            imageData: message.imageData
         )
         stored.session = session
         modelContext.insert(stored)

@@ -23,13 +23,23 @@ struct ChatMessage: Identifiable, Hashable {
     let createdAt: Date
     /// `true` si la respuesta se generó con contexto de una búsqueda web.
     var usedWeb: Bool
+    /// Imagen adjunta (PNG/JPEG) para modelos con visión como LLaVA.
+    var imageData: Data?
 
-    init(id: UUID = UUID(), role: ChatRole, content: String, createdAt: Date = .now, usedWeb: Bool = false) {
+    init(
+        id: UUID = UUID(),
+        role: ChatRole,
+        content: String,
+        createdAt: Date = .now,
+        usedWeb: Bool = false,
+        imageData: Data? = nil
+    ) {
         self.id = id
         self.role = role
         self.content = content
         self.createdAt = createdAt
         self.usedWeb = usedWeb
+        self.imageData = imageData
     }
 }
 
@@ -44,6 +54,14 @@ struct OllamaChatRequest: Encodable {
     struct Message: Codable {
         let role: String
         let content: String
+        /// Imágenes en base64 para modelos con visión (LLaVA).
+        let images: [String]?
+
+        init(role: String, content: String, images: [String]? = nil) {
+            self.role = role
+            self.content = content
+            self.images = images
+        }
     }
 }
 
@@ -61,6 +79,10 @@ struct OllamaChatChunk: Decodable {
 extension ChatMessage {
     /// Conversión al formato de mensaje que espera la API local.
     var asRequestMessage: OllamaChatRequest.Message {
-        OllamaChatRequest.Message(role: role.rawValue, content: content)
+        OllamaChatRequest.Message(
+            role: role.rawValue,
+            content: content,
+            images: imageData.map { [$0.base64EncodedString()] }
+        )
     }
 }

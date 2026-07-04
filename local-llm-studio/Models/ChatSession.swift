@@ -39,13 +39,16 @@ final class StoredMessage {
     var createdAt: Date
     /// `true` si la respuesta usó contexto de una búsqueda web.
     var usedWeb: Bool = false
+    /// Imagen adjunta, guardada fuera de la base de datos por tamaño.
+    @Attribute(.externalStorage) var imageData: Data?
     var session: ChatSession?
 
-    init(role: ChatRole, content: String, createdAt: Date = .now, usedWeb: Bool = false) {
+    init(role: ChatRole, content: String, createdAt: Date = .now, usedWeb: Bool = false, imageData: Data? = nil) {
         self.roleRaw = role.rawValue
         self.content = content
         self.createdAt = createdAt
         self.usedWeb = usedWeb
+        self.imageData = imageData
     }
 
     var role: ChatRole {
@@ -54,6 +57,6 @@ final class StoredMessage {
 
     /// Conversión al mensaje en memoria que usa la UI y la API.
     var asChatMessage: ChatMessage {
-        ChatMessage(role: role, content: content, createdAt: createdAt, usedWeb: usedWeb)
+        ChatMessage(role: role, content: content, createdAt: createdAt, usedWeb: usedWeb, imageData: imageData)
     }
 }
