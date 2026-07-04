@@ -75,4 +75,31 @@ final class ModelCatalogViewModel {
     func cancelDownload(of entry: CatalogEntry) {
         tasks[entry.tag]?.cancel()
     }
+
+    // MARK: - Borrado de modelos instalados
+
+    /// Nombres de modelos cuyo borrado está en curso.
+    private(set) var deletingModels: Set<String> = []
+
+    /// Mensaje del último error de borrado, apto para la UI.
+    private(set) var deletionError: String?
+
+    /// Elimina un modelo instalado para liberar espacio en disco.
+    func delete(_ model: OllamaModel) {
+        guard !deletingModels.contains(model.name) else { return }
+        deletingModels.insert(model.name)
+        deletionError = nil
+
+        Task {
+            do {
+                try await service.deleteModel(name: model.name)
+                // El estado de descarga del catálogo vuelve a "descargable".
+                downloads = downloads.filter { !model.name.hasPrefix($0.key) }
+                await onModelsChanged?()
+            } catch {
+                deletionError = error.localizedDescription
+            }
+            deletingModels.remove(model.name)
+        }
+    }
 }
