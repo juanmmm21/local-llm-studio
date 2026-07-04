@@ -4,6 +4,7 @@
 
 Aplicación nativa de macOS (SwiftUI) para gestionar y conversar con modelos de lenguaje locales —Llama, DeepSeek, Mistral, Gemma, Qwen, Phi, LLaVA…— a través de [Ollama](https://ollama.com), con biblioteca de documentos propia para RAG privado y búsqueda web híbrida opcional.
 
+[![CI](https://github.com/juanmmm21/local-llm-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/juanmmm21/local-llm-studio/actions/workflows/ci.yml)
 ![Plataforma](https://img.shields.io/badge/macOS-14%2B-blue?logo=apple)
 ![Swift](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
 ![UI](https://img.shields.io/badge/SwiftUI-nativo-8A2BE2)
