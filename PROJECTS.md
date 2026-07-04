@@ -31,8 +31,8 @@ El principio rector del proyecto es **local-first con privacidad por defecto**: 
 - [x] Lógica nativa de lectura de archivos locales (Markdown, TXT, PDF vía PDFKit).
 - [x] Procesador RAG local: extracción, chunking, embeddings locales (`/api/embed` + nomic-embed-text) con respaldo por palabras clave, e inyección de contexto en el prompt con citas de origen.
 
-### Fase 4: Búsqueda Web Híbrida (Planificada)
-- [ ] Interruptor de privacidad en la UI para activar/desactivar el acceso a internet del asistente (off por defecto).
-- [ ] Servicio de búsqueda web nativo (URLSession) que recupera y limpia resultados relevantes.
-- [ ] Inyección de los resultados web en el prompt junto al contexto del RAG local, con citas de las fuentes.
-- [ ] Indicador visible en el chat cuando una respuesta ha usado información de internet.
+### Fase 4: Búsqueda Web Híbrida (Completada)
+- [x] Interruptor de privacidad en la UI para activar/desactivar el acceso a internet del asistente (off por defecto, se recuerda entre sesiones).
+- [x] Servicio de búsqueda web nativo (URLSession + DuckDuckGo HTML, sin claves de API) que recupera y limpia resultados relevantes.
+- [x] Inyección de los resultados web en el prompt junto al contexto del RAG local, con citas de las fuentes.
+- [x] Indicador visible en el chat cuando una respuesta ha usado información de internet.
