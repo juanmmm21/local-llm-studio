@@ -73,6 +73,46 @@ actor WebSearchService {
         return results
     }
 
+    /// Descarga una página web y devuelve su texto legible (sin scripts,
+    /// estilos ni etiquetas), recortado a `maxLength` caracteres. Devuelve
+    /// `nil` si la página no se puede leer o no tiene contenido útil, para
+    /// que quien llama use el resumen del buscador como alternativa.
+    func fetchPageText(from url: URL, maxLength: Int = 2500) async -> String? {
+        guard let (data, response) = try? await session.data(from: url),
+              let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            return nil
+        }
+        guard let html = String(data: data, encoding: .utf8)
+            ?? String(data: data, encoding: .isoLatin1) else {
+            return nil
+        }
+        return Self.readableText(fromHTML: html, maxLength: maxLength)
+    }
+
+    /// Reduce un documento HTML a su texto visible.
+    static func readableText(fromHTML html: String, maxLength: Int) -> String? {
+        var text = html
+        // Bloques sin contenido útil para el modelo.
+        for tag in ["script", "style", "noscript", "svg", "head", "nav", "footer", "form"] {
+            text = text.replacingOccurrences(
+                of: "<\(tag)[^>]*>[\\s\\S]*?</\(tag)>",
+                with: " ",
+                options: [.regularExpression, .caseInsensitive]
+            )
+        }
+        text = plainText(fromHTML: text)
+        // Normaliza los espacios que dejan las etiquetas eliminadas.
+        text = text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+
+        // Menos de ~200 caracteres suele ser una página vacía o bloqueada.
+        guard text.count > 200 else { return nil }
+        return String(text.prefix(maxLength))
+    }
+
     // MARK: - Parsing
 
     /// Extrae título, URL y resumen de cada resultado del HTML de DuckDuckGo.

@@ -162,11 +162,29 @@ final class ChatViewModel {
     // MARK: - Búsqueda web opcional
 
     /// Busca la pregunta en la web y la convierte en un mensaje de sistema
-    /// con los resultados y sus fuentes. Devuelve `nil` si no hay resultados
-    /// o falla la conexión (la generación continúa solo con contexto local).
+    /// con los resultados y sus fuentes. De las dos primeras páginas se
+    /// descarga el contenido completo (no solo el resumen del buscador);
+    /// del resto se usa el resumen. Devuelve `nil` si no hay resultados o
+    /// falla la conexión (la generación continúa solo con contexto local).
     private func webContextMessage(for query: String) async -> ChatMessage? {
         guard let results = try? await webSearch.search(query), !results.isEmpty else {
             return nil
+        }
+
+        // Lectura en paralelo del contenido de las páginas principales.
+        let pagesToRead = 2
+        let pageTexts: [Int: String] = await withTaskGroup(of: (Int, String?).self) { group in
+            for (index, result) in results.prefix(pagesToRead).enumerated() {
+                let webSearch = self.webSearch
+                group.addTask {
+                    (index, await webSearch.fetchPageText(from: result.url))
+                }
+            }
+            var texts: [Int: String] = [:]
+            for await (index, text) in group {
+                if let text { texts[index] = text }
+            }
+            return texts
         }
 
         var prompt = """
@@ -175,8 +193,9 @@ final class ChatViewModel {
         bastan para responder con seguridad, indícalo.
 
         """
-        for result in results {
-            prompt += "\n--- \(result.title) (\(result.url.absoluteString)) ---\n\(result.snippet)\n"
+        for (index, result) in results.enumerated() {
+            let body = pageTexts[index] ?? result.snippet
+            prompt += "\n--- \(result.title) (\(result.url.absoluteString)) ---\n\(body)\n"
         }
         return ChatMessage(role: .system, content: prompt)
     }
