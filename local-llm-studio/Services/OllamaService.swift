@@ -40,15 +40,13 @@ enum OllamaServiceError: LocalizedError {
 /// bloquear el hilo principal; todas las llamadas usan `async/await`.
 actor OllamaService {
 
-    /// URL base del servidor local de Ollama.
-    private let baseURL: URL
+    /// URL base del servidor de Ollama. Se lee de Ajustes en cada petición,
+    /// de modo que cambiar el host o puerto surte efecto al instante.
+    private var baseURL: URL { AppSettings.baseURL }
     private let session: URLSession
     private let decoder: JSONDecoder
 
-    init(host: String = "127.0.0.1", port: Int = 11434) {
-        // Construida a partir de valores fijos locales: nunca apunta a internet.
-        self.baseURL = URL(string: "http://\(host):\(port)")!
-
+    init() {
         // Configuración efímera: sin caché en disco ni cookies persistentes.
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 10
@@ -97,7 +95,11 @@ actor OllamaService {
         let body = OllamaChatRequest(
             model: model,
             messages: messages.map(\.asRequestMessage),
-            stream: true
+            stream: true,
+            options: OllamaChatRequest.Options(
+                temperature: AppSettings.temperature,
+                numCtx: AppSettings.contextWindow > 0 ? AppSettings.contextWindow : nil
+            )
         )
         request.httpBody = try JSONEncoder().encode(body)
 

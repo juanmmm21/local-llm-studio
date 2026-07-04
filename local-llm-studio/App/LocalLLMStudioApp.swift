@@ -17,5 +17,9 @@ struct LocalLLMStudioApp: App {
         }
         .windowStyle(.automatic)
         .modelContainer(for: [ChatSession.self, LibraryDocument.self])
+
+        Settings {
+            SettingsView()
+        }
     }
 }

@@ -50,6 +50,18 @@ struct OllamaChatRequest: Encodable {
     let model: String
     let messages: [Message]
     let stream: Bool
+    let options: Options?
+
+    /// Parámetros de generación configurables desde Ajustes.
+    struct Options: Encodable {
+        let temperature: Double?
+        let numCtx: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case temperature
+            case numCtx = "num_ctx"
+        }
+    }
 
     struct Message: Codable {
         let role: String

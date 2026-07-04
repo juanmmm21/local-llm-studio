@@ -96,6 +96,12 @@ final class ChatViewModel {
         isGenerating = true
 
         generationTask = Task {
+            // Instrucciones de sistema definidas por el usuario en Ajustes.
+            let systemPrompt = AppSettings.systemPrompt
+            if !systemPrompt.isEmpty {
+                history.insert(ChatMessage(role: .system, content: systemPrompt), at: 0)
+            }
+
             // Sin texto no hay consulta que buscar (p. ej. solo una imagen).
             if useLibrary, !prompt.isEmpty, let contextMessage = await libraryContextMessage(for: prompt) {
                 history.insert(contextMessage, at: max(0, history.count - 1))
