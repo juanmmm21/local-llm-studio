@@ -38,3 +38,4 @@ local-llm-studio/
 - [x] **Fase 2:** catálogo integrado con descarga de modelos con un clic y progreso en vivo.
 - [x] **Fase 3:** historial de conversaciones persistido (SwiftData) y biblioteca de documentos con RAG privado (embeddings locales con respaldo por palabras clave).
 - [x] **Fase 4:** búsqueda web híbrida opcional (el modelo local responde con contexto de internet; interruptor de privacidad desactivado por defecto e indicador de fuente en cada respuesta).
+- [x] **Fase 5:** gestión de modelos instalados (borrado para liberar disco), índice semántico auto-instalado, renombrado y búsqueda del historial, lectura completa de páginas web y chat con imágenes (LLaVA).

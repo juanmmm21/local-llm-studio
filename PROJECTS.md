@@ -36,3 +36,10 @@ El principio rector del proyecto es **local-first con privacidad por defecto**: 
 - [x] Servicio de búsqueda web nativo (URLSession + DuckDuckGo HTML, sin claves de API) que recupera y limpia resultados relevantes.
 - [x] Inyección de los resultados web en el prompt junto al contexto del RAG local, con citas de las fuentes.
 - [x] Indicador visible en el chat cuando una respuesta ha usado información de internet.
+
+### Fase 5: Gestión Avanzada y Multimodalidad (Completada)
+- [x] Gestión de modelos instalados: eliminación desde el catálogo con confirmación para liberar disco (`/api/delete`).
+- [x] Instalación automática del modelo de embeddings (nomic-embed-text) en el primer arranque; excluido del selector de chat.
+- [x] Renombrado de conversaciones y búsqueda en el historial (por título y contenido de los mensajes).
+- [x] Lectura del contenido completo de las páginas web principales en la búsqueda híbrida (no solo los resúmenes del buscador).
+- [x] Chat multimodal: adjuntar imágenes PNG/JPEG para modelos con visión (LLaVA), con persistencia en el historial.
