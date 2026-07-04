@@ -8,8 +8,9 @@
 	     El código solo se conecta a 127.0.0.1:11434 (Ollama local). -->
 	<key>com.apple.security.network.client</key>
 	<true/>
-	<!-- Biblioteca RAG: acceso a archivos seleccionados por el usuario. -->
-	<key>com.apple.security.files.user-selected.read-only</key>
+	<!-- Archivos seleccionados por el usuario: lectura para la biblioteca
+	     RAG y escritura para exportar conversaciones. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
 	<!-- Bookmarks con ámbito de seguridad para releer los documentos
 	     de la biblioteca sin volver a pedirlos en cada sesión. -->
