@@ -170,8 +170,11 @@ final class ChatViewModel {
             }
 
             // Sin texto no hay consulta que buscar (p. ej. solo una imagen).
-            if useLibrary, !prompt.isEmpty, let contextMessage = await libraryContextMessage(for: prompt) {
+            var ragSources: [RAGSource]?
+            if useLibrary, !prompt.isEmpty,
+               let (contextMessage, sources) = await libraryContextMessage(for: prompt) {
                 history.insert(contextMessage, at: max(0, history.count - 1))
+                ragSources = sources
             }
 
             var usedWeb = false
@@ -181,7 +184,12 @@ final class ChatViewModel {
             }
 
             // Mensaje vacío del asistente que se rellena token a token.
-            var assistantMessage = ChatMessage(role: .assistant, content: "", usedWeb: usedWeb)
+            var assistantMessage = ChatMessage(
+                role: .assistant,
+                content: "",
+                usedWeb: usedWeb,
+                ragSources: ragSources
+            )
             messages.append(assistantMessage)
             let assistantIndex = messages.count - 1
 
@@ -285,9 +293,10 @@ final class ChatViewModel {
     // MARK: - RAG local
 
     /// Recupera los fragmentos más relevantes de la biblioteca y los
-    /// convierte en un mensaje de sistema. Devuelve `nil` si la biblioteca
-    /// está vacía o no hay nada suficientemente relacionado.
-    private func libraryContextMessage(for query: String) async -> ChatMessage? {
+    /// convierte en un mensaje de sistema, junto con las fuentes que se
+    /// mostrarán bajo la respuesta. Devuelve `nil` si la biblioteca está
+    /// vacía o no hay nada suficientemente relacionado.
+    private func libraryContextMessage(for query: String) async -> (ChatMessage, [RAGSource])? {
         guard let modelContext else { return nil }
         let chunks = (try? modelContext.fetch(FetchDescriptor<DocumentChunk>())) ?? []
         guard !chunks.isEmpty else { return nil }
@@ -300,7 +309,14 @@ final class ChatViewModel {
         )
         guard !relevant.isEmpty else { return nil }
 
-        return ChatMessage(role: .system, content: ContextRetriever.contextPrompt(for: relevant))
+        let sources = relevant.map { chunk in
+            RAGSource(
+                documentName: chunk.document?.name ?? "Documento",
+                excerpt: String(chunk.text.prefix(240))
+            )
+        }
+        let message = ChatMessage(role: .system, content: ContextRetriever.contextPrompt(for: relevant))
+        return (message, sources)
     }
 
     // MARK: - Búsqueda web opcional
@@ -354,7 +370,8 @@ final class ChatViewModel {
             createdAt: message.createdAt,
             usedWeb: message.usedWeb,
             imageData: message.imageData,
-            metrics: message.metrics
+            metrics: message.metrics,
+            ragSources: message.ragSources
         )
         stored.session = session
         modelContext.insert(stored)

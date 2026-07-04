@@ -27,6 +27,8 @@ struct ChatMessage: Identifiable, Hashable {
     var imageData: Data?
     /// Estadísticas de la generación (solo respuestas del asistente).
     var metrics: GenerationMetrics?
+    /// Fragmentos de la biblioteca usados como contexto en esta respuesta.
+    var ragSources: [RAGSource]?
 
     init(
         id: UUID = UUID(),
@@ -35,7 +37,8 @@ struct ChatMessage: Identifiable, Hashable {
         createdAt: Date = .now,
         usedWeb: Bool = false,
         imageData: Data? = nil,
-        metrics: GenerationMetrics? = nil
+        metrics: GenerationMetrics? = nil,
+        ragSources: [RAGSource]? = nil
     ) {
         self.id = id
         self.role = role
@@ -44,6 +47,7 @@ struct ChatMessage: Identifiable, Hashable {
         self.usedWeb = usedWeb
         self.imageData = imageData
         self.metrics = metrics
+        self.ragSources = ragSources
     }
 }
 
@@ -101,6 +105,13 @@ struct OllamaChatChunk: Decodable {
         case evalCount = "eval_count"
         case evalDuration = "eval_duration"
     }
+}
+
+/// Fragmento de la biblioteca local que se inyectó como contexto en una
+/// respuesta, para poder mostrar las fuentes al usuario.
+struct RAGSource: Hashable, Codable, Sendable {
+    let documentName: String
+    let excerpt: String
 }
 
 /// Estadísticas de una generación completada, para mostrar en la UI.

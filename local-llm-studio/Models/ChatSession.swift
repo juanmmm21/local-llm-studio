@@ -46,6 +46,8 @@ final class StoredMessage {
     @Attribute(.externalStorage) var imageData: Data?
     /// Métricas de generación serializadas (JSON de GenerationMetrics).
     var metricsData: Data?
+    /// Fuentes RAG serializadas (JSON de [RAGSource]).
+    var ragSourcesData: Data?
     var session: ChatSession?
 
     init(
@@ -54,7 +56,8 @@ final class StoredMessage {
         createdAt: Date = .now,
         usedWeb: Bool = false,
         imageData: Data? = nil,
-        metrics: GenerationMetrics? = nil
+        metrics: GenerationMetrics? = nil,
+        ragSources: [RAGSource]? = nil
     ) {
         self.roleRaw = role.rawValue
         self.content = content
@@ -62,6 +65,7 @@ final class StoredMessage {
         self.usedWeb = usedWeb
         self.imageData = imageData
         self.metricsData = metrics.flatMap { try? JSONEncoder().encode($0) }
+        self.ragSourcesData = ragSources.flatMap { try? JSONEncoder().encode($0) }
     }
 
     var role: ChatRole {
@@ -72,6 +76,10 @@ final class StoredMessage {
         metricsData.flatMap { try? JSONDecoder().decode(GenerationMetrics.self, from: $0) }
     }
 
+    var ragSources: [RAGSource]? {
+        ragSourcesData.flatMap { try? JSONDecoder().decode([RAGSource].self, from: $0) }
+    }
+
     /// Conversión al mensaje en memoria que usa la UI y la API.
     var asChatMessage: ChatMessage {
         ChatMessage(
@@ -80,7 +88,8 @@ final class StoredMessage {
             createdAt: createdAt,
             usedWeb: usedWeb,
             imageData: imageData,
-            metrics: metrics
+            metrics: metrics,
+            ragSources: ragSources
         )
     }
 }
