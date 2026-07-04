@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var sessionSearchText = ""
     @State private var sessionToRename: ChatSession?
     @State private var renameDraft = ""
+    @State private var sessionToExport: ChatSession?
 
     var body: some View {
         NavigationSplitView {
@@ -102,6 +103,9 @@ struct ContentView: View {
                                 renameDraft = session.title
                                 sessionToRename = session
                             }
+                            Button("Exportar como Markdown…") {
+                                sessionToExport = session
+                            }
                             Button("Eliminar conversación", role: .destructive) {
                                 delete(session)
                             }
@@ -119,6 +123,17 @@ struct ContentView: View {
 
             Divider()
             serverStatusFooter
+        }
+        .fileExporter(
+            isPresented: Binding(
+                get: { sessionToExport != nil },
+                set: { if !$0 { sessionToExport = nil } }
+            ),
+            document: MarkdownFile(text: sessionToExport.map(ConversationExporter.markdown) ?? ""),
+            contentType: .plainText,
+            defaultFilename: sessionToExport.map(ConversationExporter.suggestedFileName).map { $0 + ".md" }
+        ) { _ in
+            sessionToExport = nil
         }
         .alert("Renombrar conversación", isPresented: Binding(
             get: { sessionToRename != nil },
