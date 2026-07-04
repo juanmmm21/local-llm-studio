@@ -23,6 +23,10 @@ struct ContentView: View {
     @State private var isCatalogPresented = false
     @State private var isLibraryPresented = false
 
+    @State private var sessionSearchText = ""
+    @State private var sessionToRename: ChatSession?
+    @State private var renameDraft = ""
+
     var body: some View {
         NavigationSplitView {
             sidebar
@@ -69,11 +73,22 @@ struct ContentView: View {
 
     // MARK: - Sidebar
 
+    /// Conversaciones filtradas por el texto de búsqueda: coincide con el
+    /// título o con el contenido de cualquier mensaje del historial.
+    private var filteredSessions: [ChatSession] {
+        let query = sessionSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return sessions }
+        return sessions.filter { session in
+            session.title.localizedCaseInsensitiveContains(query)
+                || session.messages.contains { $0.content.localizedCaseInsensitiveContains(query) }
+        }
+    }
+
     private var sidebar: some View {
         VStack(spacing: 0) {
             List(selection: $selectedSession) {
                 Section("Conversaciones") {
-                    ForEach(sessions) { session in
+                    ForEach(filteredSessions) { session in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(session.title)
                                 .lineLimit(1)
@@ -83,6 +98,10 @@ struct ContentView: View {
                         }
                         .tag(session)
                         .contextMenu {
+                            Button("Renombrar…") {
+                                renameDraft = session.title
+                                sessionToRename = session
+                            }
                             Button("Eliminar conversación", role: .destructive) {
                                 delete(session)
                             }
@@ -91,9 +110,30 @@ struct ContentView: View {
                 }
             }
             .listStyle(.sidebar)
+            .searchable(text: $sessionSearchText, placement: .sidebar, prompt: "Buscar en el historial")
+            .overlay {
+                if filteredSessions.isEmpty && !sessionSearchText.isEmpty {
+                    ContentUnavailableView.search(text: sessionSearchText)
+                }
+            }
 
             Divider()
             serverStatusFooter
+        }
+        .alert("Renombrar conversación", isPresented: Binding(
+            get: { sessionToRename != nil },
+            set: { if !$0 { sessionToRename = nil } }
+        )) {
+            TextField("Título", text: $renameDraft)
+            Button("Guardar") {
+                let title = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let sessionToRename, !title.isEmpty {
+                    sessionToRename.title = title
+                    try? modelContext.save()
+                }
+                sessionToRename = nil
+            }
+            Button("Cancelar", role: .cancel) { sessionToRename = nil }
         }
     }
 
