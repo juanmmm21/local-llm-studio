@@ -26,6 +26,13 @@ final class ModelListViewModel {
     private(set) var models: [OllamaModel] = []
     private(set) var state: LoadState = .idle
 
+    /// Modelos aptos para conversar. Los modelos de embeddings (como
+    /// nomic-embed-text) sirven para indexar la biblioteca, no para chatear,
+    /// así que se excluyen del selector.
+    var chatModels: [OllamaModel] {
+        models.filter { !$0.name.localizedCaseInsensitiveContains("embed") }
+    }
+
     private let service: OllamaService
 
     /// Tiempo máximo de espera a que el servidor arranque (en tandas de 0,5 s).

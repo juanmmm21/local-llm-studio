@@ -26,9 +26,10 @@ final class ModelCatalogViewModel {
     /// Estado por tag de modelo. Las entradas ausentes están en `.idle`.
     private(set) var downloads: [String: DownloadState] = [:]
 
-    /// Se invoca al terminar con éxito una descarga (para recargar la lista
-    /// de modelos instalados desde quien presenta el catálogo).
-    var onModelInstalled: (() async -> Void)?
+    /// Se invoca cuando cambia el conjunto de modelos instalados
+    /// (descarga completada o modelo eliminado), para que quien presenta
+    /// el catálogo recargue su lista.
+    var onModelsChanged: (() async -> Void)?
 
     private let service: OllamaService
     private var tasks: [String: Task<Void, Never>] = [:]
@@ -59,7 +60,7 @@ final class ModelCatalogViewModel {
                     downloads[entry.tag] = .downloading(progress)
                 }
                 downloads[entry.tag] = .completed
-                await onModelInstalled?()
+                await onModelsChanged?()
             } catch is CancellationError {
                 downloads[entry.tag] = .idle
             } catch {

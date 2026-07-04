@@ -46,13 +46,11 @@ struct ContentView: View {
         .task {
             chat.configure(context: modelContext)
 
-            // Al terminar cada descarga del catálogo, refresca el sidebar
-            // y selecciona un modelo si aún no había ninguno.
-            catalog.onModelInstalled = {
+            // Al cambiar los modelos instalados (descarga o borrado),
+            // refresca el sidebar y valida la selección actual.
+            catalog.onModelsChanged = {
                 await modelList.loadModels()
-                if selectedModel == nil {
-                    selectedModel = modelList.models.first
-                }
+                normalizeModelSelection()
             }
 
             // Retoma la conversación más reciente o crea la primera.
@@ -61,9 +59,7 @@ struct ContentView: View {
             }
 
             await modelList.loadModels()
-            if selectedModel == nil {
-                selectedModel = modelList.models.first
-            }
+            normalizeModelSelection()
         }
     }
 
@@ -131,13 +127,22 @@ struct ContentView: View {
             case .loaded:
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                Text("\(modelList.models.count) modelos locales")
+                Text("\(modelList.chatModels.count) modelos locales")
             }
         }
         .font(.caption)
         .foregroundStyle(.secondary)
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Garantiza que el modelo seleccionado sigue instalado y es de chat;
+    /// si no, selecciona el primero disponible.
+    private func normalizeModelSelection() {
+        if let selectedModel, modelList.chatModels.contains(selectedModel) {
+            return
+        }
+        selectedModel = modelList.chatModels.first
     }
 
     // MARK: - Sesiones
@@ -167,7 +172,7 @@ struct ContentView: View {
         ToolbarItem(placement: .navigation) {
             Picker("Modelo", selection: $selectedModel) {
                 Text("Sin modelo").tag(OllamaModel?.none)
-                ForEach(modelList.models) { model in
+                ForEach(modelList.chatModels) { model in
                     Text(model.name).tag(Optional(model))
                 }
             }
