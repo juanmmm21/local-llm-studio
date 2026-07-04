@@ -92,6 +92,29 @@ struct ChatView: View {
                             isStreaming: viewModel.isGenerating && message.id == viewModel.messages.last?.id
                         )
                         .id(message.id)
+                        .contextMenu {
+                            Button("Copiar texto") {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(message.content, forType: .string)
+                            }
+                            if message.role == .user && !viewModel.isGenerating {
+                                Button("Editar y reenviar") {
+                                    viewModel.editAndResend(message)
+                                }
+                            }
+                        }
+                    }
+
+                    if viewModel.canRegenerate, let model = selectedModel {
+                        Button {
+                            viewModel.regenerate(model: model.name)
+                        } label: {
+                            Label("Regenerar respuesta", systemImage: "arrow.clockwise")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .help("Descarta la última respuesta y genera otra con \(model.name)")
                     }
                 }
                 .padding()

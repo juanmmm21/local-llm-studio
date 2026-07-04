@@ -91,6 +91,56 @@ final class ChatViewModel {
         persist(userMessage)
         updateSessionMetadata(firstPrompt: prompt.isEmpty ? "Imagen adjunta" : prompt)
 
+        generate(model: model)
+    }
+
+    /// `true` si la última respuesta del asistente se puede regenerar.
+    var canRegenerate: Bool {
+        !isGenerating && messages.last?.role == .assistant
+    }
+
+    /// Descarta la última respuesta del asistente y genera una nueva
+    /// (útil para probar otra redacción o incluso otro modelo).
+    func regenerate(model: String) {
+        guard !isGenerating,
+              let lastAssistant = messages.lastIndex(where: { $0.role == .assistant }) else { return }
+        removeMessages(from: lastAssistant)
+        errorMessage = nil
+        generate(model: model)
+    }
+
+    /// Devuelve un mensaje del usuario al borrador para editarlo,
+    /// recortando la conversación desde ese punto (incluida la respuesta
+    /// que provocó). Al reenviar, la conversación continúa desde ahí.
+    func editAndResend(_ message: ChatMessage) {
+        guard !isGenerating, message.role == .user,
+              let index = messages.firstIndex(where: { $0.id == message.id }) else { return }
+        draft = message.content
+        draftImage = message.imageData
+        removeMessages(from: index)
+        errorMessage = nil
+    }
+
+    /// Elimina de la memoria y del historial persistido los mensajes desde
+    /// `index` (inclusive) hasta el final de la conversación.
+    private func removeMessages(from index: Int) {
+        guard messages.indices.contains(index) else { return }
+        let cutoff = messages[index].createdAt
+        messages.removeSubrange(index...)
+
+        if let session, let modelContext {
+            for stored in session.messages where stored.createdAt >= cutoff {
+                modelContext.delete(stored)
+            }
+            try? modelContext.save()
+        }
+    }
+
+    /// Lanza la generación de una respuesta a partir de la conversación
+    /// actual, cuyo último mensaje debe ser del usuario.
+    private func generate(model: String) {
+        let prompt = messages.last(where: { $0.role == .user })?.content ?? ""
+
         // El contexto RAG se envía a la API pero no se guarda ni se pinta.
         var history = messages
         isGenerating = true
