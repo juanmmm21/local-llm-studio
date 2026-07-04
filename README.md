@@ -13,6 +13,20 @@ Aplicación nativa de macOS (SwiftUI) para gestionar y conversar con modelos de 
 
 ---
 
+## Capturas
+
+**Chat con modelos locales**, con respuestas en streaming, Markdown enriquecido y bloques de código copiables:
+
+![Chat con un modelo local](docs/screenshots/chat.png)
+
+| Catálogo de modelos integrado | Biblioteca RAG privada |
+|---|---|
+| ![Catálogo de modelos](docs/screenshots/catalogo.png) | ![Biblioteca de documentos](docs/screenshots/biblioteca.png) |
+
+**Fuentes verificables**: cada respuesta que usó tu biblioteca muestra los fragmentos exactos que se inyectaron como contexto:
+
+![Fuentes del RAG](docs/screenshots/fuentes-rag.png)
+
 ## ¿Por qué?
 
 Los asistentes de IA en la nube obligan a elegir entre capacidad y privacidad. **local-llm-studio** elimina ese dilema: toda la inferencia ocurre en tu Mac, tus conversaciones y documentos nunca salen de él, y aun así puedes darle al modelo acceso puntual a internet cuando tú lo decidas.
