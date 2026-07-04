@@ -42,6 +42,13 @@ struct MessageBubbleView: View {
                            : AnyShapeStyle(.quaternary.opacity(0.5)),
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
+
+                if !isUser && message.usedWeb {
+                    Label("Con información de internet", systemImage: "globe")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .help("Esta respuesta usó resultados de una búsqueda web")
+                }
             }
 
             if !isUser { Spacer(minLength: 60) }

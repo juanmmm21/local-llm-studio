@@ -78,6 +78,17 @@ struct ChatView: View {
                       : "Biblioteca desactivada para esta conversación")
                 .padding(.bottom, 6)
 
+                Toggle(isOn: $viewModel.isWebSearchEnabled) {
+                    Image(systemName: "globe")
+                        .foregroundStyle(viewModel.isWebSearchEnabled ? Color.accentColor : Color.secondary)
+                }
+                .toggleStyle(.button)
+                .buttonStyle(.borderless)
+                .help(viewModel.isWebSearchEnabled
+                      ? "Búsqueda web activada: tus preguntas se enviarán a DuckDuckGo para buscar contexto"
+                      : "Búsqueda web desactivada: todo se procesa en tu Mac")
+                .padding(.bottom, 6)
+
                 TextField(
                     selectedModel.map { "Mensaje para \($0.name)…" } ?? "Selecciona un modelo para empezar",
                     text: $viewModel.draft,
