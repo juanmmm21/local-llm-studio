@@ -63,3 +63,9 @@ El principio rector del proyecto es **local-first con privacidad por defecto**: 
 - [x] Indicador de modelos en memoria (`/api/ps`) con expulsión de RAM sin borrar del disco (`keep_alive: 0`).
 - [x] Pregunta rápida en la barra de menús de macOS (MenuBarExtra), sin abrir la ventana principal y sin guardar historial.
 - [x] Target de tests unitarios (XCTest): 33 tests de parsing Markdown, recuperación RAG, chunking, parsing web y saneado de títulos.
+
+### Fase 8: Escaparate y Distribución (Completada)
+- [x] Capturas de pantalla reales en el README (`docs/screenshots/`).
+- [x] Icono rediseñado: cerebro de neón sobre fondo oscuro, con el set completo de tamaños de macOS.
+- [x] Integración continua con GitHub Actions: build + tests en cada push y PR, con badge en el README.
+- [x] Empaquetado de releases (`Scripts/make-release.sh`): build Release + DMG con enlace a Aplicaciones, publicado en GitHub Releases.

@@ -14,3 +14,4 @@ xcuserdata/
 # Swift Package Manager (solo caches locales; sin dependencias externas por política)
 .build/
 .swiftpm/
+dist/

@@ -119,6 +119,12 @@ flowchart LR
 
 ## Empezar
 
+### Descarga directa
+
+Puedes bajar la app empaquetada desde la [página de releases](https://github.com/juanmmm21/local-llm-studio/releases): monta el DMG y arrastra la app a Aplicaciones.
+
+> **Nota de Gatekeeper**: la app está firmada localmente (sin notarización de Apple, que requiere una cuenta de desarrollador de pago). La primera vez, ábrela con clic derecho → «Abrir» y confirma. Si prefieres no confiar en binarios, compílala tú mismo en un minuto (abajo).
+
 ### Requisitos
 
 - macOS 14.0 o superior (Apple Silicon o Intel).
@@ -170,7 +176,7 @@ local-llm-studioTests/  # Tests unitarios (XCTest)
 - [x] **Fase 5** — Gestión de modelos instalados, índice semántico auto-instalado, renombrado y búsqueda del historial, lectura completa de páginas y chat con imágenes.
 - [x] **Fase 6** — Experiencia de producto: Markdown enriquecido, Ajustes nativos, métricas, exportación, arrastrar y soltar, onboarding e icono propio.
 - [x] **Fase 7** — Regenerar/editar mensajes, plantillas de asistente, títulos automáticos, fuentes del RAG visibles, carpetas vigiladas, indicador de memoria, barra de menús y suite de tests.
-- [ ] Próximamente: integración continua, capturas y release firmada (ver issues).
+- [x] **Fase 8** — Escaparate y distribución: capturas, icono rediseñado, CI con GitHub Actions y releases con DMG descargable.
 
 ## Licencia
 
