@@ -53,3 +53,13 @@ El principio rector del proyecto es **local-first con privacidad por defecto**: 
 - [x] Arrastrar y soltar sobre el chat: imágenes al mensaje, documentos a la biblioteca RAG.
 - [x] Onboarding de primer arranque: guía visual de instalación cuando Ollama no está en el Mac.
 - [x] Icono de app propio con todos los tamaños del set de macOS (generador en `Scripts/make-app-icon.swift`).
+
+### Fase 7: Potencia de Chat, RAG Avanzado y Calidad (Completada)
+- [x] Regenerar la última respuesta y editar/reenviar mensajes propios (la conversación se recorta desde ese punto).
+- [x] Plantillas de asistente por conversación (traductor, revisor de código, redactor, profesor, resumidor) con prioridad sobre el prompt global.
+- [x] Títulos de conversación generados automáticamente por el modelo local tras el primer intercambio (con limpieza de razonamiento tipo `<think>`).
+- [x] Fuentes del RAG visibles: cada respuesta muestra los fragmentos de la biblioteca que se inyectaron como contexto.
+- [x] Carpetas vigiladas: la biblioteca se sincroniza con carpetas del usuario en cada arranque (altas y bajas de documentos).
+- [x] Indicador de modelos en memoria (`/api/ps`) con expulsión de RAM sin borrar del disco (`keep_alive: 0`).
+- [x] Pregunta rápida en la barra de menús de macOS (MenuBarExtra), sin abrir la ventana principal y sin guardar historial.
+- [x] Target de tests unitarios (XCTest): 33 tests de parsing Markdown, recuperación RAG, chunking, parsing web y saneado de títulos.

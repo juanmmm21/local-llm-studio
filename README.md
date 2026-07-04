@@ -26,20 +26,27 @@ Los asistentes de IA en la nube obligan a elegir entre capacidad y privacidad. *
 ### Chat con modelos locales
 - Respuestas en **streaming token a token**, con cancelación instantánea que conserva el texto parcial.
 - Selector de modelo en la barra superior; cambia de modelo en mitad de una conversación.
+- **Regenera la última respuesta** con un clic (incluso con otro modelo) y **edita y reenvía** cualquier mensaje tuyo: la conversación continúa desde ese punto.
+- **Plantillas de asistente por conversación** (traductor, revisor de código, redactor, profesor, resumidor), con instrucciones de sistema propias.
+- **Títulos automáticos**: el propio modelo local resume la conversación en un título tras el primer intercambio.
 - **Chat multimodal**: adjunta imágenes PNG/JPEG y pregunta sobre ellas con modelos de visión como LLaVA.
 - Historial **persistente con SwiftData**: renombra conversaciones y busca en todo el historial por título o contenido.
+- **Pregunta rápida desde la barra de menús** de macOS: una consulta puntual sin abrir la ventana principal y sin guardar historial.
 
 ### Gestión de modelos sin terminal
 - **Catálogo integrado** con una selección curada de los modelos más relevantes del ecosistema, con descripción en español, fabricante y tamaño de descarga.
 - Descarga con un clic, **progreso en vivo**, descargas concurrentes y cancelables (lo ya bajado se conserva).
 - Elimina modelos instalados desde la propia app para liberar disco, con confirmación del espacio recuperado.
-- Si Ollama no está en ejecución, **la app lo arranca sola** en segundo plano.
+- **Indicador de memoria**: ve qué modelos están cargados en RAM ahora mismo y cuánta ocupan, y **expúlsalos de la memoria** sin borrarlos del disco.
+- Si Ollama no está en ejecución, **la app lo arranca sola** en segundo plano; y si no está instalado, un **onboarding guiado** te acompaña en el primer arranque.
 
 ### Biblioteca de documentos (RAG privado)
 - Añade Markdown, TXT o PDF; la app guarda una referencia (nunca copia el archivo) y lo indexa en tu Mac.
+- **Carpetas vigiladas**: elige una carpeta y la biblioteca se sincroniza sola en cada arranque —los documentos nuevos se indexan y los borrados desaparecen.
 - **Búsqueda semántica con embeddings locales** (`nomic-embed-text`, que la app instala automáticamente en el primer arranque), con respaldo por palabras clave si aún no está disponible.
 - Fragmentación inteligente que respeta párrafos con solapamiento entre fragmentos.
 - El contexto relevante se inyecta en el prompt **citando el documento de origen**, y puede activarse o desactivarse por conversación.
+- **Fuentes verificables**: cada respuesta que usó la biblioteca muestra, de forma expandible, los fragmentos exactos que se inyectaron como contexto.
 
 ### Búsqueda web híbrida (opcional)
 - **Desactivada por defecto**: un interruptor de privacidad controla si el asistente puede consultar internet, y la elección se recuerda.
@@ -81,6 +88,7 @@ flowchart LR
 | Capa | Tecnología | Papel |
 |---|---|---|
 | Interfaz | SwiftUI + `@Observable` | Tres zonas: historial, chat y gestión de modelos. Estados de carga fluidos. |
+| Calidad | XCTest | Suite de tests unitarios del parsing Markdown, recuperación RAG, chunking y parsing web. |
 | Concurrencia | `async/await`, `actor`, `AsyncThrowingStream` | Streaming sin bloquear la UI; servicios seguros frente a concurrencia. |
 | Persistencia | SwiftData (+ `.externalStorage` para imágenes) | Conversaciones, documentos, fragmentos y embeddings. |
 | Inferencia | Ollama (API REST local) | Chat, embeddings y gestión de modelos en `localhost:11434`. |
@@ -108,6 +116,9 @@ flowchart LR
 git clone https://github.com/juanmmm21/local-llm-studio.git
 cd local-llm-studio
 xcodebuild -scheme local-llm-studio -destination 'platform=macOS' build
+
+# Ejecutar la suite de tests
+xcodebuild -scheme local-llm-studio -destination 'platform=macOS' test
 ```
 
 O simplemente abre `local-llm-studio.xcodeproj` en Xcode y pulsa ⌘R. En el primer arranque, la app iniciará Ollama si hace falta, te ofrecerá el catálogo si no tienes modelos y preparará el índice semántico por su cuenta.
@@ -126,12 +137,13 @@ O simplemente abre `local-llm-studio.xcodeproj` en Xcode y pulsa ⌘R. En el pri
 
 ```
 local-llm-studio/
-├── App/            # Punto de entrada, contenedor SwiftData y escena de Ajustes
+├── App/            # Punto de entrada, contenedor SwiftData, Ajustes y barra de menús
 ├── Models/         # Dominio, ajustes y contratos JSON de la API local de Ollama
 ├── Services/       # OllamaService, indexado RAG, búsqueda web, exportación
 ├── ViewModels/     # Estado observable (@Observable, MainActor)
 ├── Views/          # Vistas SwiftUI (chat, catálogo, biblioteca, onboarding, ajustes)
 └── Resources/      # Assets (icono propio) y entitlements (App Sandbox)
+local-llm-studioTests/  # Tests unitarios (XCTest)
 ```
 
 ## Hoja de ruta
@@ -142,7 +154,8 @@ local-llm-studio/
 - [x] **Fase 4** — Búsqueda web híbrida con interruptor de privacidad e indicador de fuente.
 - [x] **Fase 5** — Gestión de modelos instalados, índice semántico auto-instalado, renombrado y búsqueda del historial, lectura completa de páginas y chat con imágenes.
 - [x] **Fase 6** — Experiencia de producto: Markdown enriquecido, Ajustes nativos, métricas, exportación, arrastrar y soltar, onboarding e icono propio.
-- [ ] Próximamente: más mejoras en la hoja de ruta (ver issues).
+- [x] **Fase 7** — Regenerar/editar mensajes, plantillas de asistente, títulos automáticos, fuentes del RAG visibles, carpetas vigiladas, indicador de memoria, barra de menús y suite de tests.
+- [ ] Próximamente: integración continua, capturas y release firmada (ver issues).
 
 ## Licencia
 
