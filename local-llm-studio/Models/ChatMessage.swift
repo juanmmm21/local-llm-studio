@@ -21,12 +21,15 @@ struct ChatMessage: Identifiable, Hashable {
     let role: ChatRole
     var content: String
     let createdAt: Date
+    /// `true` si la respuesta se generó con contexto de una búsqueda web.
+    var usedWeb: Bool
 
-    init(id: UUID = UUID(), role: ChatRole, content: String, createdAt: Date = .now) {
+    init(id: UUID = UUID(), role: ChatRole, content: String, createdAt: Date = .now, usedWeb: Bool = false) {
         self.id = id
         self.role = role
         self.content = content
         self.createdAt = createdAt
+        self.usedWeb = usedWeb
     }
 }
 

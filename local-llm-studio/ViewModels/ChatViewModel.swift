@@ -30,13 +30,24 @@ final class ChatViewModel {
     /// local y se inyectan como contexto en el prompt (RAG privado).
     var useLibrary = true
 
+    /// Interruptor de privacidad de la búsqueda web (Fase 4). Desactivado
+    /// por defecto: solo si el usuario lo enciende, la pregunta se envía
+    /// al buscador. Se recuerda entre sesiones.
+    var isWebSearchEnabled: Bool {
+        didSet { UserDefaults.standard.set(isWebSearchEnabled, forKey: Self.webSearchKey) }
+    }
+
+    private static let webSearchKey = "assistant.webSearchEnabled"
+
     private let service: OllamaService
+    private let webSearch = WebSearchService()
     private var generationTask: Task<Void, Never>?
     private var modelContext: ModelContext?
     private(set) var session: ChatSession?
 
     init(service: OllamaService = OllamaService()) {
         self.service = service
+        self.isWebSearchEnabled = UserDefaults.standard.bool(forKey: Self.webSearchKey)
     }
 
     var canSend: Bool {
@@ -83,8 +94,14 @@ final class ChatViewModel {
                 history.insert(contextMessage, at: max(0, history.count - 1))
             }
 
+            var usedWeb = false
+            if isWebSearchEnabled, let webMessage = await webContextMessage(for: prompt) {
+                history.insert(webMessage, at: max(0, history.count - 1))
+                usedWeb = true
+            }
+
             // Mensaje vacío del asistente que se rellena token a token.
-            var assistantMessage = ChatMessage(role: .assistant, content: "")
+            var assistantMessage = ChatMessage(role: .assistant, content: "", usedWeb: usedWeb)
             messages.append(assistantMessage)
             let assistantIndex = messages.count - 1
 
@@ -142,11 +159,38 @@ final class ChatViewModel {
         return ChatMessage(role: .system, content: ContextRetriever.contextPrompt(for: relevant))
     }
 
+    // MARK: - Búsqueda web opcional
+
+    /// Busca la pregunta en la web y la convierte en un mensaje de sistema
+    /// con los resultados y sus fuentes. Devuelve `nil` si no hay resultados
+    /// o falla la conexión (la generación continúa solo con contexto local).
+    private func webContextMessage(for query: String) async -> ChatMessage? {
+        guard let results = try? await webSearch.search(query), !results.isEmpty else {
+            return nil
+        }
+
+        var prompt = """
+        Resultados de una búsqueda web reciente sobre la pregunta del usuario. \
+        Úsalos si son relevantes y cita siempre la fuente con su URL. Si no \
+        bastan para responder con seguridad, indícalo.
+
+        """
+        for result in results {
+            prompt += "\n--- \(result.title) (\(result.url.absoluteString)) ---\n\(result.snippet)\n"
+        }
+        return ChatMessage(role: .system, content: prompt)
+    }
+
     // MARK: - Persistencia
 
     private func persist(_ message: ChatMessage) {
         guard let session, let modelContext else { return }
-        let stored = StoredMessage(role: message.role, content: message.content, createdAt: message.createdAt)
+        let stored = StoredMessage(
+            role: message.role,
+            content: message.content,
+            createdAt: message.createdAt,
+            usedWeb: message.usedWeb
+        )
         stored.session = session
         modelContext.insert(stored)
         session.updatedAt = .now
