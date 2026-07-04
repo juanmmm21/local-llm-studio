@@ -40,8 +40,7 @@ struct MessageBubbleView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                             if !message.content.isEmpty {
-                                Text(LocalizedStringKey(message.content))
-                                    .textSelection(.enabled)
+                                MessageContentView(content: message.content)
                             }
                         }
                     }
