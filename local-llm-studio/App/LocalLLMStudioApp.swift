@@ -24,8 +24,10 @@ struct LocalLLMStudioApp: App {
 
         // Pregunta rápida desde la barra de menús, sin abrir la ventana
         // principal ni guardar historial.
-        MenuBarExtra("Pregunta rápida", systemImage: "brain.head.profile") {
+        MenuBarExtra {
             QuickAskView()
+        } label: {
+            SlashIconView()
         }
         .menuBarExtraStyle(.window)
     }

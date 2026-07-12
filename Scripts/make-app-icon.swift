@@ -3,8 +3,10 @@
 //  Herramienta de desarrollo (no forma parte de la app).
 //
 //  Toma un PNG cuadrado a sangre completa y genera los diez tamaños del
-//  AppIcon.appiconset de macOS, aplicando el estilo nativo: margen
-//  transparente y recorte de esquinas redondeadas.
+//  AppIcon.appiconset de macOS.
+//
+//  macOS 26 (Tahoe) encierra el icono en un marco gris si detecta píxeles con
+//  alpha ≤ 252; forzamos alpha = 255 en todo el lienzo tras renderizar.
 //
 //  Uso: swift Scripts/make-app-icon.swift <entrada.png> <carpeta appiconset>
 //
@@ -26,11 +28,22 @@ guard let source = NSImage(contentsOf: inputURL) else {
     exit(1)
 }
 
-/// Proporciones de la retícula oficial de iconos de macOS:
-/// el cuadrado redondeado ocupa 824/1024 del lienzo y su radio de
-/// esquina es ~185/824 del tamaño del propio cuadrado.
-let insetRatio: CGFloat = (1024 - 824) / 2 / 1024
-let cornerRatio: CGFloat = 185.0 / 824.0
+/// Tahoe 26 exige alpha ≥ 253 en todos los píxeles para evitar el marco gris.
+func forceOpaquePixels(in bitmap: NSBitmapImageRep) {
+    guard let data = bitmap.bitmapData else { return }
+    let bytesPerPixel = bitmap.bitsPerPixel / 8
+    guard bytesPerPixel >= 4 else { return }
+
+    let bytesPerRow = bitmap.bytesPerRow
+    let height = bitmap.pixelsHigh
+    let width = bitmap.pixelsWide
+
+    for y in 0..<height {
+        for x in 0..<width {
+            data[y * bytesPerRow + x * bytesPerPixel + 3] = 255
+        }
+    }
+}
 
 func renderIcon(pixelSize: Int, to url: URL) {
     guard let bitmap = NSBitmapImageRep(
@@ -53,14 +66,15 @@ func renderIcon(pixelSize: Int, to url: URL) {
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
 
     let canvas = CGFloat(pixelSize)
-    let inset = (canvas * insetRatio).rounded()
-    let squareRect = NSRect(x: inset, y: inset, width: canvas - inset * 2, height: canvas - inset * 2)
-    let radius = squareRect.width * cornerRatio
+    let squareRect = NSRect(x: 0, y: 0, width: canvas, height: canvas)
 
-    NSBezierPath(roundedRect: squareRect, xRadius: radius, yRadius: radius).addClip()
-    source.draw(in: squareRect, from: .zero, operation: .copy, fraction: 1)
+    // Fondo blanco opaco antes de pintar: evita píxeles transparentes residuales.
+    NSColor.white.setFill()
+    squareRect.fill()
+    source.draw(in: squareRect, from: .zero, operation: .sourceOver, fraction: 1)
 
     NSGraphicsContext.restoreGraphicsState()
+    forceOpaquePixels(in: bitmap)
 
     guard let data = bitmap.representation(using: .png, properties: [:]) else {
         print("No se pudo codificar el PNG de \(pixelSize)px")
