@@ -69,3 +69,13 @@ El principio rector del proyecto es **local-first con privacidad por defecto**: 
 - [x] Icono rediseñado: cerebro de neón sobre fondo oscuro, con el set completo de tamaños de macOS.
 - [x] Integración continua con GitHub Actions: build + tests en cada push y PR, con badge en el README.
 - [x] Empaquetado de releases (`Scripts/make-release.sh`): build Release + DMG con enlace a Aplicaciones, publicado en GitHub Releases.
+
+### Fase 9: RAG v2 — Recuperación Híbrida y Banco de Calidad (En curso)
+Objetivo: que la biblioteca encuentre de verdad el fragmento correcto y poder **medirlo**. Se portan a Swift (sin dependencias externas, como el resto de la app) los algoritmos de `ai-core-infra` (`semantic-chunking-engine`, `hybrid-search-retrieval-pipeline`, `cross-encoder-reranker`, `llm-eval-harness`), que así pasan a tener un uso real.
+- [ ] Banco de pruebas de la biblioteca: preguntas con documento de origen esperado (y respuesta de referencia opcional), métricas Recall@k y MRR, línea base guardada y aviso de regresión.
+- [ ] Generación asistida de preguntas de prueba a partir de la propia biblioteca con el modelo local, revisadas por el usuario antes de entrar en el banco.
+- [ ] Prefijos de tarea de nomic-embed-text (`search_query:` / `search_document:`) en consultas y fragmentos, con reindexado automático de la biblioteca.
+- [ ] Recuperación híbrida: índice BM25 propio + similitud de coseno, fusionados con Reciprocal Rank Fusion (sin umbral fijo de similitud).
+- [ ] Fragmentación semántica: cortes donde cambia el tema (distancia entre embeddings de ventanas de frases, umbral dinámico) con límite de tamaño; versión de fragmentador guardada por documento.
+- [ ] Reordenación opcional de los candidatos con un modelo local pequeño, activada solo si el banco demuestra que mejora.
+- [ ] Comparador de configuraciones en el banco (clásica / híbrida / híbrida + reordenación) y tests unitarios de BM25, RRF, fragmentación semántica y métricas.
