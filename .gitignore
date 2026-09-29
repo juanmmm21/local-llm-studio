@@ -15,3 +15,6 @@ xcuserdata/
 .build/
 .swiftpm/
 dist/
+
+# Handoff de fase para agentes (no se versiona)
+START_HERE.md
