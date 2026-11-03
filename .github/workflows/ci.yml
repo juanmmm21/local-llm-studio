@@ -13,7 +13,8 @@ on:
 jobs:
   build-and-test:
     name: Compilar y testear (macOS)
-    runs-on: macos-15
+    # AppIcon.icon (Tahoe) solo lo compila el actool de Xcode 26.
+    runs-on: macos-26
 
     steps:
       - name: Clonar el repositorio
